@@ -7,7 +7,8 @@ const PILLARS = [
   ["quality", "Filmography Quality"],
   ["awards", "Awards Prestige"],
   ["versatility", "Genre Versatility"],
-  ["sentiment", "Critical Sentiment"]
+  ["sentiment", "Critical Sentiment"],
+  ["commercial", "Commercial Impact"]
 ];
 
 function ActorSearch({ api, side, actor, onSelect, onClear }) {
@@ -120,7 +121,11 @@ function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight }
                 <div key={key} className={isWinner ? "rounded-xl border border-sky-400/50 bg-sky-400/5 p-3" : "p-3"}>
                   <div className="mb-2 flex justify-between text-sm">
                     <span className="text-slate-300">{label}</span>
-                    <span className="font-bold">{value == null ? "Not enough review data" : value}</span>
+                    <span className="font-bold">
+                      {value == null
+                        ? key === "sentiment" ? "Not enough review data" : "Not enough box office data"
+                        : value}
+                    </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-card">
                     <div className="h-full rounded-full bg-sky-400" style={{ width: `${value ?? 0}%` }} />

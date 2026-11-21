@@ -9,7 +9,9 @@
     "seed": "node scripts/generate-seed.mjs",
     "audit": "node scripts/audit.mjs",
     "resolve-directors": "node scripts/resolve-directors.mjs",
-    "check-tmdb": "node scripts/check-tmdb.mjs"
+    "check-tmdb": "node scripts/check-tmdb.mjs",
+    "audit-awards": "node scripts/audit-awards.mjs",
+    "control-actors": "node scripts/control-actors.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

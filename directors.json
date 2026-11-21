@@ -1,600 +1,151 @@
 [
-  {
-    "name": "Stanley Kubrick",
-    "tmdb_id": 240
-  },
-  {
-    "name": "Alfred Hitchcock",
-    "tmdb_id": 2636
-  },
-  {
-    "name": "Akira Kurosawa",
-    "tmdb_id": 5026
-  },
-  {
-    "name": "Martin Scorsese",
-    "tmdb_id": 1032
-  },
-  {
-    "name": "Orson Welles",
-    "tmdb_id": 40
-  },
-  {
-    "name": "Steven Spielberg",
-    "tmdb_id": 488
-  },
-  {
-    "name": "Francis Ford Coppola",
-    "tmdb_id": 1776
-  },
-  {
-    "name": "Charlie Chaplin",
-    "tmdb_id": null
-  },
-  {
-    "name": "Federico Fellini",
-    "tmdb_id": 4415
-  },
-  {
-    "name": "Ingmar Bergman",
-    "tmdb_id": 6648
-  },
-  {
-    "name": "John Ford",
-    "tmdb_id": 8500
-  },
-  {
-    "name": "Christopher Nolan",
-    "tmdb_id": null
-  },
-  {
-    "name": "Billy Wilder",
-    "tmdb_id": 3146
-  },
-  {
-    "name": "David Lynch",
-    "tmdb_id": 5602
-  },
-  {
-    "name": "Quentin Tarantino",
-    "tmdb_id": 138
-  },
-  {
-    "name": "James Cameron",
-    "tmdb_id": 2710
-  },
-  {
-    "name": "Andrei Tarkovsky",
-    "tmdb_id": 8452
-  },
-  {
-    "name": "Jean-Luc Godard",
-    "tmdb_id": 3776
-  },
-  {
-    "name": "Yasujirō Ozu",
-    "tmdb_id": 95501
-  },
-  {
-    "name": "Luis Buñuel",
-    "tmdb_id": 793
-  },
-  {
-    "name": "Satyajit Ray",
-    "tmdb_id": 12160
-  },
-  {
-    "name": "Sergio Leone",
-    "tmdb_id": 4385
-  },
-  {
-    "name": "David Lean",
-    "tmdb_id": 12238
-  },
-  {
-    "name": "Hayao Miyazaki",
-    "tmdb_id": 608
-  },
-  {
-    "name": "Frank Capra",
-    "tmdb_id": 2662
-  },
-  {
-    "name": "Fritz Lang",
-    "tmdb_id": 68
-  },
-  {
-    "name": "Sergei Eisenstein",
-    "tmdb_id": null
-  },
-  {
-    "name": "Buster Keaton",
-    "tmdb_id": 8635
-  },
-  {
-    "name": "Pedro Almodóvar",
-    "tmdb_id": 309
-  },
-  {
-    "name": "Jean Renoir",
-    "tmdb_id": null
-  },
-  {
-    "name": "Michelangelo Antonioni",
-    "tmdb_id": 15189
-  },
-  {
-    "name": "Wong Kar-wai",
-    "tmdb_id": 12453
-  },
-  {
-    "name": "Ridley Scott",
-    "tmdb_id": 578
-  },
-  {
-    "name": "George Lucas",
-    "tmdb_id": 1
-  },
-  {
-    "name": "David Fincher",
-    "tmdb_id": 7467
-  },
-  {
-    "name": "Robert Zemeckis",
-    "tmdb_id": 24
-  },
-  {
-    "name": "Guillermo del Toro",
-    "tmdb_id": 10828
-  },
-  {
-    "name": "Paul Thomas Anderson",
-    "tmdb_id": 4762
-  },
-  {
-    "name": "Robert Altman",
-    "tmdb_id": 9789
-  },
-  {
-    "name": "Sidney Lumet",
-    "tmdb_id": 39996
-  },
-  {
-    "name": "Howard Hawks",
-    "tmdb_id": 11435
-  },
-  {
-    "name": "Vittorio De Sica",
-    "tmdb_id": 12329
-  },
-  {
-    "name": "Roberto Rossellini",
-    "tmdb_id": 4410
-  },
-  {
-    "name": "Michael Mann",
-    "tmdb_id": 638
-  },
-  {
-    "name": "Joel Coen",
-    "tmdb_id": 1223,
-    "group": "Coen Brothers"
-  },
-  {
-    "name": "Ethan Coen",
-    "tmdb_id": null,
-    "group": "Coen Brothers"
-  },
-  {
-    "name": "Spike Lee",
-    "tmdb_id": 5281
-  },
-  {
-    "name": "Richard Linklater",
-    "tmdb_id": 564
-  },
-  {
-    "name": "Terrence Malick",
-    "tmdb_id": 30715
-  },
-  {
-    "name": "John Cassavetes",
-    "tmdb_id": 11147
-  },
-  {
-    "name": "Roman Polanski",
-    "tmdb_id": 3556
-  },
-  {
-    "name": "Peter Jackson",
-    "tmdb_id": 108
-  },
-  {
-    "name": "John Carpenter",
-    "tmdb_id": null
-  },
-  {
-    "name": "Brian De Palma",
-    "tmdb_id": 1150
-  },
-  {
-    "name": "Sam Peckinpah",
-    "tmdb_id": 7767
-  },
-  {
-    "name": "William Wyler",
-    "tmdb_id": 10001
-  },
-  {
-    "name": "Jacques Tati",
-    "tmdb_id": 5763
-  },
-  {
-    "name": "Miloš Forman",
-    "tmdb_id": 3974
-  },
-  {
-    "name": "Krzysztof Kieślowski",
-    "tmdb_id": 1126
-  },
-  {
-    "name": "Jean-Pierre Melville",
-    "tmdb_id": 3831
-  },
-  {
-    "name": "Jacques Demy",
-    "tmdb_id": 24882
-  },
-  {
-    "name": "Preston Sturges",
-    "tmdb_id": 30249
-  },
-  {
-    "name": "F. W. Murnau",
-    "tmdb_id": 9076
-  },
-  {
-    "name": "Dziga Vertov",
-    "tmdb_id": null
-  },
-  {
-    "name": "Agnès Varda",
-    "tmdb_id": 6817
-  },
-  {
-    "name": "Robert Bresson",
-    "tmdb_id": 10346
-  },
-  {
-    "name": "Kenji Mizoguchi",
-    "tmdb_id": null
-  },
-  {
-    "name": "Carl Theodor Dreyer",
-    "tmdb_id": 11572
-  },
-  {
-    "name": "Chantal Akerman",
-    "tmdb_id": 130030
-  },
-  {
-    "name": "Michael Haneke",
-    "tmdb_id": 6011
-  },
-  {
-    "name": "Béla Tarr",
-    "tmdb_id": 85637
-  },
-  {
-    "name": "Bong Joon-ho",
-    "tmdb_id": null
-  },
-  {
-    "name": "Park Chan-wook",
-    "tmdb_id": 10099
-  },
-  {
-    "name": "Yimou Zhang",
-    "tmdb_id": null
-  },
-  {
-    "name": "Edward Yang",
-    "tmdb_id": 143035
-  },
-  {
-    "name": "Hou Hsiao-hsien",
-    "tmdb_id": 64992
-  },
-  {
-    "name": "Shōhei Imamura",
-    "tmdb_id": 20025
-  },
-  {
-    "name": "Masaki Kobayashi",
-    "tmdb_id": null
-  },
-  {
-    "name": "Abbas Kiarostami",
-    "tmdb_id": 119294
-  },
-  {
-    "name": "Jafar Panahi",
-    "tmdb_id": 120229
-  },
-  {
-    "name": "Nuri Bilge Ceylan",
-    "tmdb_id": 56214
-  },
-  {
-    "name": "Apichatpong Weerasethakul",
-    "tmdb_id": 69759
-  },
-  {
-    "name": "Theo Angelopoulos",
-    "tmdb_id": 10316
-  },
-  {
-    "name": "Lars von Trier",
-    "tmdb_id": 42
-  },
-  {
-    "name": "Jane Campion",
-    "tmdb_id": 10757
-  },
-  {
-    "name": "Greta Gerwig",
-    "tmdb_id": null
-  },
-  {
-    "name": "Wes Anderson",
-    "tmdb_id": 5655
-  },
-  {
-    "name": "Darren Aronofsky",
-    "tmdb_id": 6431
-  },
-  {
-    "name": "M. Night Shyamalan",
-    "tmdb_id": 11614
-  },
-  {
-    "name": "William Friedkin",
-    "tmdb_id": 15175
-  },
-  {
-    "name": "Nicholas Ray",
-    "tmdb_id": 2765
-  },
-  {
-    "name": "Anthony Mann",
-    "tmdb_id": 40199
-  },
-  {
-    "name": "Joseph L. Mankiewicz",
-    "tmdb_id": null
-  },
-  {
-    "name": "Ernst Lubitsch",
-    "tmdb_id": 2428
-  },
-  {
-    "name": "King Vidor",
-    "tmdb_id": 29962
-  },
-  {
-    "name": "Raoul Walsh",
-    "tmdb_id": 8823
-  },
-  {
-    "name": "Frank Borzage",
-    "tmdb_id": 14855
-  },
-  {
-    "name": "Jacques Tourneur",
-    "tmdb_id": 10146
-  },
-  {
-    "name": "Georges Méliès",
-    "tmdb_id": 11523
-  },
-  {
-    "name": "Cecil B. DeMille",
-    "tmdb_id": 8636
-  },
-  {
-    "name": "Norman Jewison",
-    "tmdb_id": 13563
-  },
-  {
-    "name": "Hal Ashby",
-    "tmdb_id": 4964
-  },
-  {
-    "name": "Fred Zinnemann",
-    "tmdb_id": 4065
-  },
-  {
-    "name": "Richard Donner",
-    "tmdb_id": 7187
-  },
-  {
-    "name": "Peter Weir",
-    "tmdb_id": 2690
-  },
-  {
-    "name": "Richard Brooks",
-    "tmdb_id": null
-  },
-  {
-    "name": "Frank Tashlin",
-    "tmdb_id": 47399
-  },
-  {
-    "name": "Alexander Mackendrick",
-    "tmdb_id": 14566
-  },
-  {
-    "name": "Louis Malle",
-    "tmdb_id": 15389
-  },
-  {
-    "name": "Jean Cocteau",
-    "tmdb_id": 9730
-  },
-  {
-    "name": "Gillo Pontecorvo",
-    "tmdb_id": 90694
-  },
-  {
-    "name": "Sergei Parajanov",
-    "tmdb_id": 95066
-  },
-  {
-    "name": "Alexander Sokurov",
-    "tmdb_id": null
-  },
-  {
-    "name": "Emir Kusturica",
-    "tmdb_id": 15254
-  },
-  {
-    "name": "Wim Wenders",
-    "tmdb_id": 2303
-  },
-  {
-    "name": "Luchino Visconti",
-    "tmdb_id": 15127
-  },
-  {
-    "name": "Carlos Saura",
-    "tmdb_id": 96369
-  },
-  {
-    "name": "Víctor Erice",
-    "tmdb_id": 37833
-  },
-  {
-    "name": "Luis García Berlanga",
-    "tmdb_id": 37493
-  },
-  {
-    "name": "Manoel de Oliveira",
-    "tmdb_id": 81749
-  },
-  {
-    "name": "Roland Joffé",
-    "tmdb_id": 8965
-  },
-  {
-    "name": "Fernando Meirelles",
-    "tmdb_id": 8557
-  },
-  {
-    "name": "Steve McQueen",
-    "tmdb_id": 72757
-  },
-  {
-    "name": "Olivier Assayas",
-    "tmdb_id": 21678
-  },
-  {
-    "name": "Leos Carax",
-    "tmdb_id": 27977
-  },
-  {
-    "name": "Euzhan Palcy",
-    "tmdb_id": 108824
-  },
-  {
-    "name": "Miklós Jancsó",
-    "tmdb_id": 137349
-  },
-  {
-    "name": "Elem Klimov",
-    "tmdb_id": 93406
-  },
-  {
-    "name": "Andrei Konchalovsky",
-    "tmdb_id": 58728
-  },
-  {
-    "name": "Victor Fleming",
-    "tmdb_id": 9049
-  },
-  {
-    "name": "Edward Dmytryk",
-    "tmdb_id": 64114
-  },
-  {
-    "name": "George Cukor",
-    "tmdb_id": 14674
-  },
-  {
-    "name": "Jacques Rivette",
-    "tmdb_id": 73153
-  },
-  {
-    "name": "Marco Bellocchio",
-    "tmdb_id": 105866
-  },
-  {
-    "name": "Pier Paolo Pasolini",
-    "tmdb_id": 5970
-  },
-  {
-    "name": "Djibril Diop Mambéty",
-    "tmdb_id": null
-  },
-  {
-    "name": "Larisa Shepitko",
-    "tmdb_id": 143285
-  },
-  {
-    "name": "Barry Jenkins",
-    "tmdb_id": 92784
-  },
-  {
-    "name": "Richard Fleischer",
-    "tmdb_id": 2087
-  },
-  {
-    "name": "Robert Mulligan",
-    "tmdb_id": 8482
-  },
-  {
-    "name": "John Huston",
-    "tmdb_id": 6593
-  },
-  {
-    "name": "Sam Mendes",
-    "tmdb_id": 39
-  },
-  {
-    "name": "Rainer Werner Fassbinder",
-    "tmdb_id": 2725
-  },
-  {
-    "name": "Michael Powell",
-    "tmdb_id": 68424
-  },
-  {
-    "name": "Emeric Pressburger",
-    "tmdb_id": null
-  },
-  {
-    "name": "Rolf de Heer",
-    "tmdb_id": 112674
-  },
-  {
-    "name": "Robert Siodmak",
-    "tmdb_id": 5029
-  },
-  {
-    "name": "Elia Kazan",
-    "tmdb_id": 2746
-  },
-  {
-    "name": "Yorgos Lanthimos",
-    "tmdb_id": 122423
-  }
+  { "name": "Stanley Kubrick", "tmdb_id": 240 },
+  { "name": "Alfred Hitchcock", "tmdb_id": 2636 },
+  { "name": "Akira Kurosawa", "tmdb_id": 5026 },
+  { "name": "Martin Scorsese", "tmdb_id": 1032 },
+  { "name": "Orson Welles", "tmdb_id": 40 },
+  { "name": "Steven Spielberg", "tmdb_id": 488 },
+  { "name": "Francis Ford Coppola", "tmdb_id": 1776 },
+  { "name": "Charlie Chaplin", "tmdb_id": 40 },
+  { "name": "Federico Fellini", "tmdb_id": 4415 },
+  { "name": "Ingmar Bergman", "tmdb_id": 6648 },
+  { "name": "John Ford", "tmdb_id": 8500 },
+  { "name": "Christopher Nolan", "tmdb_id": 525 },
+  { "name": "Billy Wilder", "tmdb_id": 3146 },
+  { "name": "David Lynch", "tmdb_id": 5602 },
+  { "name": "Quentin Tarantino", "tmdb_id": 138 },
+  { "name": "James Cameron", "tmdb_id": 2710 },
+  { "name": "Andrei Tarkovsky", "tmdb_id": 8452 },
+  { "name": "Jean-Luc Godard", "tmdb_id": 3776 },
+  { "name": "Yasujirō Ozu", "tmdb_id": 95501 },
+  { "name": "Luis Buñuel", "tmdb_id": 793 },
+  { "name": "Satyajit Ray", "tmdb_id": 12160 },
+  { "name": "Sergio Leone", "tmdb_id": 4385 },
+  { "name": "David Lean", "tmdb_id": 12238 },
+  { "name": "Hayao Miyazaki", "tmdb_id": 608 },
+  { "name": "Frank Capra", "tmdb_id": 2662 },
+  { "name": "Fritz Lang", "tmdb_id": 68 },
+  { "name": "Sergei Eisenstein", "tmdb_id": 3074 },
+  { "name": "Buster Keaton", "tmdb_id": 8635 },
+  { "name": "Pedro Almodóvar", "tmdb_id": 309 },
+  { "name": "Jean Renoir", "tmdb_id": 12236 },
+  { "name": "Michelangelo Antonioni", "tmdb_id": 15189 },
+  { "name": "Wong Kar-wai", "tmdb_id": 12453 },
+  { "name": "Ridley Scott", "tmdb_id": 578 },
+  { "name": "George Lucas", "tmdb_id": 1 },
+  { "name": "David Fincher", "tmdb_id": 7467 },
+  { "name": "Robert Zemeckis", "tmdb_id": 24 },
+  { "name": "Guillermo del Toro", "tmdb_id": 10828 },
+  { "name": "Paul Thomas Anderson", "tmdb_id": 4762 },
+  { "name": "Robert Altman", "tmdb_id": 9789 },
+  { "name": "Sidney Lumet", "tmdb_id": 39996 },
+  { "name": "Howard Hawks", "tmdb_id": 11435 },
+  { "name": "Vittorio De Sica", "tmdb_id": 12329 },
+  { "name": "Roberto Rossellini", "tmdb_id": 4410 },
+  { "name": "Michael Mann", "tmdb_id": 638 },
+  { "name": "Joel Coen", "tmdb_id": 1223, "group": "Coen Brothers" },
+  { "name": "Ethan Coen", "tmdb_id": null, "group": "Coen Brothers" },
+  { "name": "Spike Lee", "tmdb_id": 5281 },
+  { "name": "Richard Linklater", "tmdb_id": 564 },
+  { "name": "Terrence Malick", "tmdb_id": 30715 },
+  { "name": "John Cassavetes", "tmdb_id": 11147 },
+  { "name": "Roman Polanski", "tmdb_id": 3556 },
+  { "name": "Peter Jackson", "tmdb_id": 108 },
+  { "name": "John Carpenter", "tmdb_id": 11454 },
+  { "name": "Brian De Palma", "tmdb_id": 1150 },
+  { "name": "Sam Peckinpah", "tmdb_id": 7767 },
+  { "name": "William Wyler", "tmdb_id": 10001 },
+  { "name": "Jacques Tati", "tmdb_id": 5763 },
+  { "name": "Miloš Forman", "tmdb_id": 3974 },
+  { "name": "Krzysztof Kieślowski", "tmdb_id": 1126 },
+  { "name": "Jean-Pierre Melville", "tmdb_id": 3831 },
+  { "name": "Jacques Demy", "tmdb_id": 24882 },
+  { "name": "Preston Sturges", "tmdb_id": 30249 },
+  { "name": "F. W. Murnau", "tmdb_id": 9076 },
+  { "name": "Dziga Vertov", "tmdb_id": 10 },
+  { "name": "Agnès Varda", "tmdb_id": 6817 },
+  { "name": "Robert Bresson", "tmdb_id": 10346 },
+  { "name": "Kenji Mizoguchi", "tmdb_id": 11798 },
+  { "name": "Carl Theodor Dreyer", "tmdb_id": 11572 },
+  { "name": "Chantal Akerman", "tmdb_id": 130030 },
+  { "name": "Michael Haneke", "tmdb_id": 6011 },
+  { "name": "Béla Tarr", "tmdb_id": 85637 },
+  { "name": "Bong Joon-ho", "tmdb_id": 21683 },
+  { "name": "Park Chan-wook", "tmdb_id": 10099 },
+  { "name": "Zhang Yimou", "tmdb_id": 504 },
+  { "name": "Edward Yang", "tmdb_id": 143035 },
+  { "name": "Hou Hsiao-hsien", "tmdb_id": 64992 },
+  { "name": "Shōhei Imamura", "tmdb_id": 20025 },
+  { "name": "Masaki Kobayashi", "tmdb_id": 11797 },
+  { "name": "Abbas Kiarostami", "tmdb_id": 119294 },
+  { "name": "Jafar Panahi", "tmdb_id": 120229 },
+  { "name": "Nuri Bilge Ceylan", "tmdb_id": 56214 },
+  { "name": "Apichatpong Weerasethakul", "tmdb_id": 69759 },
+  { "name": "Theo Angelopoulos", "tmdb_id": 10316 },
+  { "name": "Lars von Trier", "tmdb_id": 42 },
+  { "name": "Jane Campion", "tmdb_id": 10757 },
+  { "name": "Greta Gerwig", "tmdb_id": null },
+  { "name": "Wes Anderson", "tmdb_id": 5655 },
+  { "name": "Darren Aronofsky", "tmdb_id": 6431 },
+  { "name": "M. Night Shyamalan", "tmdb_id": 11614 },
+  { "name": "William Friedkin", "tmdb_id": 15175 },
+  { "name": "Nicholas Ray", "tmdb_id": 2765 },
+  { "name": "Anthony Mann", "tmdb_id": 40199 },
+  { "name": "Joseph L. Mankiewicz", "tmdb_id": 10400 },
+  { "name": "Ernst Lubitsch", "tmdb_id": 2428 },
+  { "name": "King Vidor", "tmdb_id": 29962 },
+  { "name": "Raoul Walsh", "tmdb_id": 8823 },
+  { "name": "Frank Borzage", "tmdb_id": 14855 },
+  { "name": "Jacques Tourneur", "tmdb_id": 10146 },
+  { "name": "Georges Méliès", "tmdb_id": 11523 },
+  { "name": "Cecil B. DeMille", "tmdb_id": 8636 },
+  { "name": "Norman Jewison", "tmdb_id": 13563 },
+  { "name": "Hal Ashby", "tmdb_id": 4964 },
+  { "name": "Fred Zinnemann", "tmdb_id": 4065 },
+  { "name": "Richard Donner", "tmdb_id": 7187 },
+  { "name": "Peter Weir", "tmdb_id": 2690 },
+  { "name": "Richard Brooks", "tmdb_id": 10915 },
+  { "name": "Frank Tashlin", "tmdb_id": 47399 },
+  { "name": "Alexander Mackendrick", "tmdb_id": 14566 },
+  { "name": "Louis Malle", "tmdb_id": 15389 },
+  { "name": "Jean Cocteau", "tmdb_id": 9730 },
+  { "name": "Gillo Pontecorvo", "tmdb_id": 90694 },
+  { "name": "Sergei Parajanov", "tmdb_id": 95066 },
+  { "name": "Alexander Sokurov", "tmdb_id": 7651 },
+  { "name": "Emir Kusturica", "tmdb_id": 15254 },
+  { "name": "Wim Wenders", "tmdb_id": 2303 },
+  { "name": "Luchino Visconti", "tmdb_id": 15127 },
+  { "name": "Carlos Saura", "tmdb_id": 96369 },
+  { "name": "Víctor Erice", "tmdb_id": 37833 },
+  { "name": "Luis García Berlanga", "tmdb_id": 37493 },
+  { "name": "Manoel de Oliveira", "tmdb_id": 81749 },
+  { "name": "Roland Joffé", "tmdb_id": 8965 },
+  { "name": "Fernando Meirelles", "tmdb_id": 8557 },
+  { "name": "Steve McQueen", "tmdb_id": 72757 },
+  { "name": "Olivier Assayas", "tmdb_id": 21678 },
+  { "name": "Leos Carax", "tmdb_id": 27977 },
+  { "name": "Euzhan Palcy", "tmdb_id": 108824 },
+  { "name": "Miklós Jancsó", "tmdb_id": 137349 },
+  { "name": "Elem Klimov", "tmdb_id": 93406 },
+  { "name": "Andrei Konchalovsky", "tmdb_id": 58728 },
+  { "name": "Victor Fleming", "tmdb_id": 9049 },
+  { "name": "Edward Dmytryk", "tmdb_id": 64114 },
+  { "name": "George Cukor", "tmdb_id": 14674 },
+  { "name": "Jacques Rivette", "tmdb_id": 73153 },
+  { "name": "Marco Bellocchio", "tmdb_id": 105866 },
+  { "name": "Pier Paolo Pasolini", "tmdb_id": 5970 },
+  { "name": "Djibril Diop Mambéty", "tmdb_id": 120587 },
+  { "name": "Larisa Shepitko", "tmdb_id": 143285 },
+  { "name": "Barry Jenkins", "tmdb_id": 92784 },
+  { "name": "Richard Fleischer", "tmdb_id": 2087 },
+  { "name": "Robert Mulligan", "tmdb_id": 8482 },
+  { "name": "John Huston", "tmdb_id": 6593 },
+  { "name": "Sam Mendes", "tmdb_id": 39 },
+  { "name": "Rainer Werner Fassbinder", "tmdb_id": 2725 },
+  { "name": "Michael Powell", "tmdb_id": 68424 },
+  { "name": "Emeric Pressburger", "tmdb_id": 11503 },
+  { "name": "Rolf de Heer", "tmdb_id": 112674 },
+  { "name": "Robert Siodmak", "tmdb_id": 5029 },
+  { "name": "Elia Kazan", "tmdb_id": 2746 },
+  { "name": "Yorgos Lanthimos", "tmdb_id": 122423 }
 ]

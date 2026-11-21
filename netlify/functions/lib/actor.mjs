@@ -29,12 +29,15 @@ export async function qualityContext(personId, credits, tv = []) {
   const valid = validCredits(credits);
   const allWorks = validWorks(credits, tv);
   const leadMovieCount = valid.filter((credit) => credit.order <= 2).length;
+  const fewLeadMovies = leadMovieCount < 5;
+  const fewWorks = allWorks.length < 12;
+  const weightedMovie = (movie) => {
+    const weight = movie.order === 0 ? 1 : movie.order === 1 ? 0.8 :
+      movie.order === 2 ? 0.6 : movie.order >= 3 && movie.order <= 5 ? 0.35 : 0.1;
+    return weight * (movie.vote_count || 0);
+  };
   const topMovies = [...valid]
-    .sort((a, b) => {
-      const weight = (order) => order === 0 ? 1 : order === 1 ? 0.8 : order === 2 ? 0.6 :
-        order >= 3 && order <= 5 ? 0.35 : 0.1;
-      return (weight(b.order) * b.vote_count) - (weight(a.order) * a.vote_count);
-    })
+    .sort((a, b) => weightedMovie(b) - weightedMovie(a))
     .slice(0, 15);
   const prestigeIds = prestigeDirectorIds();
   const sagaIds = sagaCollectionIds();
@@ -54,12 +57,62 @@ export async function qualityContext(personId, credits, tv = []) {
     const collectionId = details?.belongs_to_collection?.id;
     if (collectionId && sagaIds.has(collectionId)) sagaMovieIds.push(topMovies[index].id);
   });
+  const commercialDetails = await Promise.all(valid.map((movie) => movieDetails(movie.id)));
+  const commercialEntries = commercialDetails.map((details, index) => {
+    const movie = valid[index];
+    const weight = movie.order === 0 ? 1 : movie.order === 1 ? 0.8 :
+      movie.order === 2 ? 0.6 : movie.order >= 3 && movie.order <= 5 ? 0.35 : 0.1;
+    return {
+      id: movie.id,
+      title: details?.title || movie.title || "",
+      revenue: details?.revenue || 0,
+      release_date: details?.release_date || movie.release_date || "",
+      belongs_to_collection: details?.belongs_to_collection || null,
+      weight: weight * (directorMovieIds.includes(movie.id) ? 1.25 : 1)
+    };
+  });
+  const standaloneMovies = [];
+  const collectionById = new Map();
+  for (const movie of commercialEntries) {
+    const collectionId = movie.belongs_to_collection?.id;
+    if (!collectionId) {
+      standaloneMovies.push(movie);
+      continue;
+    }
+    const current = collectionById.get(collectionId);
+    if (!current || (movie.revenue || 0) > (current.revenue || 0)) {
+      collectionById.set(collectionId, movie);
+    }
+  }
+  const representatives = [...standaloneMovies, ...collectionById.values()];
+  const collectionMovies = [...collectionById.values()];
+  let commercialMovies;
+  if (fewLeadMovies || fewWorks) {
+    commercialMovies = representatives;
+  } else {
+    const standaloneTop = standaloneMovies
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, Math.max(0, 10 - collectionMovies.length));
+    commercialMovies = [...collectionMovies, ...standaloneTop];
+  }
+  const commercialExcluded = { saga: 0, revenue: 0, date: 0 };
+  commercialMovies.forEach((movie) => {
+    if (!movie.revenue) commercialExcluded.revenue++;
+    else if (!movie.release_date || Number(movie.release_date.slice(0, 4)) < 1980) commercialExcluded.date++;
+  });
   return {
     directorMovieIds,
     directorMovieCount: directorMovieIds.length,
     sagaMovieIds,
     sagaMovieCount: sagaMovieIds.length,
     leadMovieCount,
+    commercialMovies,
+    commercialMovieCount: commercialMovies.filter((movie) =>
+      movie.revenue > 0 &&
+      movie.release_date &&
+      Number(movie.release_date.slice(0, 4)) >= 1980
+    ).length,
+    commercialExcluded,
     allWorks
   };
 }
@@ -74,7 +127,7 @@ export async function buildActor(id) {
   const valid = validCredits(credits);
   const selectedMovies = reviewMovies(valid);
   const [awards, reviewsByMovie, qualityOptions] = await Promise.all([
-    fetchAwards(external.wikidata_id),
+    fetchAwards(external.wikidata_id, { name: personData.name, birth: personData.birthday }),
     Promise.all(selectedMovies.map((movie) => reviews(movie.id))),
     qualityContext(personData.id, credits, tv)
   ]);

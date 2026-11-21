@@ -7,12 +7,13 @@ export default function ActorModal({ actor, onClose, onMovie }) {
   useEffect(() => {
     fetch("/api/config").then((response) => response.ok ? response.json() : null).then(setConfig).catch(() => {});
   }, []);
-  const weights = config?.WEIGHTS || { quality: 0.40, awards: 0.30, versatility: 0.15, sentiment: 0.15 };
+  const weights = config?.WEIGHTS || { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 };
   const pillars = [
     ["quality", "Filmography Quality", weights.quality],
     ["awards", "Awards Prestige", weights.awards],
     ["versatility", "Genre Versatility", weights.versatility],
     ["sentiment", "Critical Sentiment", weights.sentiment],
+    ["commercial", "Commercial Impact", weights.commercial],
   ];
   const notable = (actor.awards || []).filter((a) => a.tier === "S" || a.tier === "A" || a.tier === "B");
   const leadAwards = notable.filter((award) => award.role === "lead");
@@ -35,8 +36,6 @@ export default function ActorModal({ actor, onClose, onMovie }) {
         <p className="mt-2 text-xs text-slate-500">
           Based on {actor.valid_work_count ?? "unknown"} valid works
           {actor.lead_movie_count != null ? `, ${actor.lead_movie_count} lead movies` : ""}
-          {actor.saga_movie_count ? `, ${actor.saga_movie_count} important saga appearances` : ""}
-          {actor.recent_oscar_won ? ", recent Oscar win counted at 2×" : ""}
           {actor.director_movie_count ? `, including ${actor.director_movie_count} directed by a curated prestige director` : ""}
           , and {actor.award_count ?? 0} counted acting awards.
         </p>
@@ -55,7 +54,15 @@ export default function ActorModal({ actor, onClose, onMovie }) {
           })}
         </div>
         {actor.pillars?.sentiment === null && (
-          <p className="mt-3 text-sm text-amber-300">Not enough review data (score capped at 98)</p>
+          <p className="mt-3 text-sm text-amber-300">Not enough review data (score capped at 89)</p>
+        )}
+        {(actor.ignored_awards?.length || 0) > 0 && (
+          <p className="mt-3 text-sm text-slate-400">
+            Other awards found: {actor.ignored_awards.length}
+          </p>
+        )}
+        {actor.pillars?.commercial === null && (
+          <p className="mt-3 text-sm text-amber-300">Not enough box office data</p>
         )}
 
         <h3 className="mt-8 text-lg font-bold">Notable awards</h3>

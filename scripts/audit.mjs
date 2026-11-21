@@ -49,7 +49,7 @@ async function auditOne(name) {
     const valid = validCredits(credits);
     const selected = reviewMovies(valid);
     const [awards, reviewResults, qualityOptions] = await Promise.all([
-      fetchAwards(external.wikidata_id),
+      fetchAwards(external.wikidata_id, { name: personData.name, birth: personData.birthday }),
       Promise.all(selected.map((movie) => reviews(movie.id))),
       qualityContext(found.id, credits, tv)
     ]);
@@ -78,7 +78,7 @@ console.log("Actor Merit Ranker score audit");
 console.log("Ranges below are common-sense estimates, not truths or pass/fail assertions.");
 console.log("Suggested ranges: Daniel Day-Lewis/Meryl Streep 85–97; Mikey Madison 65–80; Robert Pattinson 50–70.");
 console.log("");
-console.log(["Actor", "Score", "Quality", "Awards", "Versatility", "Sentiment", "Lead films", "Saga films", "Director films", "Valid works", "Few works", "Recent Oscar", "Awards+", "Ignored", "Wikidata"].join(" | "));
+console.log(["Actor", "Score", "Quality", "Awards", "Versatility", "Sentiment", "Commercial", "Lead films", "Saga films", "Director films", "Commercial counted", "Commercial excluded", "Commercial included", "Valid works", "Few works", "Recent Oscar", "Awards+", "Ignored", "Wikidata"].join(" | "));
 console.log("-".repeat(155));
 for (const actor of actors) {
   if (actor.error) {
@@ -93,9 +93,13 @@ for (const actor of actors) {
     actor.pillars.awards,
     actor.pillars.versatility,
     actor.pillars.sentiment ?? "omitted",
+    actor.pillars.commercial ?? "omitted",
     actor.lead_movie_count ?? 0,
     actor.saga_movie_count ?? 0,
     actor.director_movie_count ?? 0,
+    actor.commercial_movie_count ?? 0,
+    actor.commercial_excluded ? `${actor.commercial_excluded.saga} saga / ${actor.commercial_excluded.revenue} revenue / ${actor.commercial_excluded.date} date` : "0",
+    (actor.commercial_included_titles || []).slice(0, 3).join("; ") || "-",
     actor.valid_work_count ?? 0,
     actor.few_works ? "yes" : "no",
     actor.recent_oscar_won ? "yes" : "no",

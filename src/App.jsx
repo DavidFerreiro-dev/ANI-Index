@@ -61,7 +61,7 @@ export default function App() {
   const openActor = async (id) => {
     setError(""); setLoading("Calculating this actor’s score… this can take up to 20 seconds.");
     const cached = getCachedActor(id);
-    if (cached && cached.scoring_version === 16) {
+    if (cached && cached.scoring_version === 18) {
       setSelected(cached);
       setLoading("");
       return;

@@ -1,77 +1,100 @@
 # Actor Merit Ranker
 
-React/Vite application deployed entirely on Netlify. TMDb calls and Wikidata calculations run through Netlify Functions. Actor results are cached in browser `localStorage`; the repository no longer includes Python, SQLite or a backend server.
+Actor Merit Ranker is a React/Vite app for comparing actors from TMDb by a transparent acting-merit score. The project uses Netlify Functions for TMDb and Wikidata requests, and caches calculated actors in browser `localStorage`. There is no Python server or SQLite database.
 
-## Netlify setup
+## Features
 
-1. Push the repository to GitHub.
-2. In Netlify, choose **Add new site > Import an existing project**.
-3. Netlify reads `netlify.toml`: it runs `npm run build`, publishes `dist`, and loads Functions from `netlify/functions`.
-4. Open **Site configuration > Environment variables** and add `TMDB_API_KEY`.
-5. Deploy the site.
+- Top Rated and A–Z rankings from a committed seed
+- Actor search and movie cast exploration
+- Side-by-side actor comparison
+- Actor score breakdown, notable awards and lead projects
+- Top-six filmography weighting
+- Credits from both movies and TV
+- Prestige director and important saga multipliers
+- Recent Oscar performance-win adjustment
+- Commercial Impact for standalone films and one top-grossing appearance per collection
+- Wikidata award data and TMDb attribution
 
-## Local development
+## Architecture
+
+- `src/` — React, Tailwind and UI components
+- `public/seed-actors.json` — immediate fallback ranking
+- `public/favicon.svg` — diamond favicon
+- `netlify/functions/` — search, actor, cast and configuration Functions
+- `netlify/functions/lib/scoring.mjs` — scoring implementation
+- `netlify/functions/lib/scoring-config.mjs` — centralized weights and thresholds
+- `directors.json` — curated prestigious directors
+- `sagas.json` — curated film collections
+- `curated_notes.json` — optional manually sourced historical notes
+
+## Environment
 
 Create a root `.env` file locally:
 
 ```text
-TMDB_API_KEY=your_tmdb_key_or_read_token
+TMDB_API_KEY=your_TMDb_key_or_read_token
 ```
 
-Then run:
+Do not commit `.env`. It is excluded by `.gitignore`. Use `.env.example` as a template.
+
+On Netlify, add `TMDB_API_KEY` under **Site configuration > Environment variables**.
+
+## Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Do not commit `.env`. Use `.env.example` as the template.
+Netlify Dev serves the app and Functions at `http://localhost:8888`.
 
-Check that the key is working:
+## Testing TMDb
 
 ```bash
 npm run check-tmdb
 ```
 
-## Static seed
+## Seed and audit
 
-The committed `public/seed-actors.json` allows the ranking to appear immediately.
+Generate the static fallback ranking:
 
 ```bash
 npm run seed
 ```
 
-This script calculates roughly 28 varied actors and overwrites the seed JSON.
-
-## Few-work filmographies
-
-For fewer than 8 valid movies and series, the Filmography Quality pillar includes the actor's complete
-valid filmography. Series and supporting roles count, but the result is still a weighted average.
-
-## Director resolution
-
-Configure `TMDB_API_KEY`, then run:
-
-```bash
-npm run resolve-directors
-```
-
-The script updates `directors.json` with resolved TMDb IDs and writes unresolved names to
-`directors-unresolved.json`. Ambiguous or failed matches are never guessed.
-
-## Cache
-
-Calculated actors are stored in browser `localStorage`. When `SCORING_VERSION` in
-`netlify/functions/lib/scoring-config.mjs` changes, cached actors with a different version are recalculated.
-
-## Scoring audit
+Run the 30-actor score audit:
 
 ```bash
 npm run audit
 ```
 
-The audit prints roughly 30 actors with final scores, four pillars, counted awards, ignored awards and Wikidata availability.
+Resolve TMDb IDs for the curated director list:
 
-## Limitations
+```bash
+npm run resolve-directors
+```
 
-The free Netlify plan limits Function execution time and monthly compute credits. The ranking uses short TMDb/Wikidata fallbacks, browser caching and the committed static seed to remain usable.
+## Netlify deployment
+
+1. Push the repository to GitHub.
+2. Import the repository into Netlify.
+3. Netlify reads `netlify.toml`.
+4. Set `TMDB_API_KEY` in Netlify environment variables.
+5. Deploy.
+
+The build command is `npm run build`, the publish directory is `dist`, and Functions are loaded from `netlify/functions`.
+
+## Scoring summary
+
+- Filmography Quality: 40%
+- Awards Prestige: 30%
+- Genre Versatility: 15%
+- Critical Sentiment: 15%
+
+Filmography Quality uses the strongest weighted works rather than adding every valid title. Actors with fewer than five lead movies include supporting and series appearances; important saga or prestige-director work receives additional weight.
+
+Performance Oscar wins within five years receive double Oscar points. Award data comes from Wikidata and may be incomplete.
+
+## Data attribution
+
+This product uses the TMDb API but is not endorsed or certified by TMDb. Awards data comes from Wikidata (CC0).
