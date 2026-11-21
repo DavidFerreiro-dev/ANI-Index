@@ -1,0 +1,25 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[dev]
+  framework = "vite"
+  command = "npm run vite"
+  targetPort = 5173
+  port = 8888
+
+[[redirects]]
+  from = "/api/movies/*/cast"
+  to = "/.netlify/functions/movie-cast/:splat/cast"
+  status = 200
+
+[[redirects]]
+  from = "/api/actors/*"
+  to = "/.netlify/functions/actors/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200

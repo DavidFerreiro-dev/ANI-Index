@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { background: #0B0D10; color: #E6E8EC; }
+:focus-visible { outline: 2px solid #38BDF8; outline-offset: 2px; }
+
+/* Diamond badge: glow + light sweep */
+.gem { filter: drop-shadow(0 0 6px rgba(56,189,248,.55)); animation: gemGlow 2.6s ease-in-out infinite; }
+.gem-sweep { animation: gemSweep 3.2s ease-in-out infinite; }
+@keyframes gemGlow { 0%,100% { filter: drop-shadow(0 0 4px rgba(56,189,248,.4)); } 50% { filter: drop-shadow(0 0 12px rgba(125,211,252,.95)); } }
+@keyframes gemSweep { 0% { transform: translateX(-120px); } 55%,100% { transform: translateX(120px); } }
+@media (prefers-reduced-motion: reduce) { .gem, .gem-sweep { animation: none; } }

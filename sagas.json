@@ -1,0 +1,20 @@
+[
+  {"tmdb_collection_id": 2602, "name": "Scream"},
+  {"tmdb_collection_id": 10, "name": "Star Wars"},
+  {"tmdb_collection_id": 86311, "name": "The Avengers"},
+  {"tmdb_collection_id": 529, "name": "Harry Potter"},
+  {"tmdb_collection_id": 119, "name": "The Lord of the Rings"},
+  {"tmdb_collection_id": 121938, "name": "The Hobbit"},
+  {"tmdb_collection_id": 9485, "name": "The Fast and the Furious"},
+  {"tmdb_collection_id": 86334, "name": "Indiana Jones"},
+  {"tmdb_collection_id": 295, "name": "Pirates of the Caribbean"},
+  {"tmdb_collection_id": 84, "name": "Batman"},
+  {"tmdb_collection_id": 263, "name": "James Bond"},
+  {"tmdb_collection_id": 8091, "name": "Alien"},
+  {"tmdb_collection_id": 120794, "name": "X-Men"},
+  {"tmdb_collection_id": 556, "name": "Spider-Man"},
+  {"tmdb_collection_id": 403, "name": "Rocky"},
+  {"tmdb_collection_id": 138, "name": "The Godfather"},
+  {"tmdb_collection_id": 465661, "name": "Mission: Impossible"},
+  {"tmdb_collection_id": 64727, "name": "John Wick"}
+]
