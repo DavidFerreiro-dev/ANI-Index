@@ -28,6 +28,7 @@ dotenv.config({
 });
 
 const names = [
+  // --- 100 ORIGINALES ---
   "James Stewart", "Leonardo DiCaprio", "Robert Downey Jr.", "Brad Pitt", "Tom Hanks",
   "Robert De Niro", "Emma Stone", "Denzel Washington", "Al Pacino", "Morgan Freeman",
   "Ryan Gosling", "Jack Nicholson", "Humphrey Bogart", "Audrey Hepburn", "Timothée Chalamet",
@@ -47,7 +48,31 @@ const names = [
   "Uma Thurman", "Harvey Keitel", "Tim Roth", "J.K. Simmons", "Nicolas Cage",
   "Johnny Depp", "Robin Williams", "Jim Carrey", "Santiago Segura", "Charlie Chaplin",
   "Milly Alcock", "Paul Newman", "Jack Lemmon", "Emma Watson", "Margaret Qualley",
-  "Amanda Seyfried", "Anya Taylor-Joy", "Sadie Sink", "Jenna Ortega", "Mads Mikkelsen"
+  "Amanda Seyfried", "Anya Taylor-Joy", "Sadie Sink", "Jenna Ortega", "Mads Mikkelsen",
+
+  // --- +60 ACTRICES NUEVAS ---
+  "Ingrid Bergman", "Bette Davis", "Elizabeth Taylor", "Grace Kelly", "Vivien Leigh",
+  "Sophia Loren", "Judy Garland", "Joan Crawford", "Barbara Stanwyck", "Faye Dunaway",
+  "Diane Keaton", "Sigourney Weaver", "Glenn Close", "Jessica Lange", "Kathy Bates",
+  "Holly Hunter", "Susan Sarandon", "Emma Thompson", "Kate Winslet", "Tilda Swinton",
+  "Marion Cotillard", "Isabelle Huppert", "Juliette Binoche", "Penélope Cruz", "Carmen Maura",
+  "Maribel Verdú", "Toni Collette", "Laura Linney", "Amy Adams", "Jessica Chastain",
+  "Saoirse Ronan", "Zendaya", "Jennifer Lawrence", "Brie Larson", "Anne Hathaway",
+  "Rachel Weisz", "Helena Bonham Carter", "Olivia Colman", "Michelle Williams", "Carey Mulligan",
+  "Emily Blunt", "Rosamund Pike", "Naomi Watts", "Reese Witherspoon", "Sandra Bullock",
+  "Julia Roberts", "Halle Berry", "Angela Bassett", "Octavia Spencer", "Regina King",
+  "Lupita Nyong'o", "Salma Hayek", "Gong Li", "Maggie Cheung", "Youn Yuh-jung",
+  "Rinko Kikuchi", "Léa Seydoux", "Adèle Exarchopoulos", "Rebecca Ferguson", "Kirsten Dunst",
+
+  // --- +40 ACTORES NUEVOS ---
+  "Gregory Peck", "Henry Fonda", "Spencer Tracy", "Clark Gable", "Kirk Douglas",
+  "Burt Lancaster", "Orson Welles", "James Dean", "Steve McQueen", "Sidney Poitier",
+  "Gene Hackman", "Dustin Hoffman", "Robert Redford", "Donald Sutherland", "Peter O'Toole",
+  "Alec Guinness", "Marcello Mastroianni", "Toshiro Mifune", "Alain Delon", "Jean-Paul Belmondo",
+  "Tony Leung Chiu-wai", "Choi Min-sik", "Ricardo Darín", "Luis Tosar", "Antonio Banderas",
+  "Gael García Bernal", "Diego Luna", "Benicio del Toro", "Oscar Isaac", "Adam Driver",
+  "Paul Mescal", "Austin Butler", "Barry Keoghan", "Jesse Plemons", "Ethan Hawke",
+  "Philip Seymour Hoffman", "Bill Murray", "Jeff Bridges", "Liam Neeson", "Viggo Mortensen"
 ];
 
 // Configuración
@@ -191,6 +216,22 @@ async function buildOne(name) {
 if (!process.env.TMDB_API_KEY) {
   console.error("TMDB_API_KEY is required to generate the seed.");
   process.exit(1);
+}
+
+{
+  const probeUrl = new URL("https://api.themoviedb.org/3/search/person");
+  const probeHeaders = {};
+  if (process.env.TMDB_API_KEY.split(".").length === 3) {
+    probeHeaders.Authorization = `Bearer ${process.env.TMDB_API_KEY}`;
+  } else {
+    probeUrl.searchParams.set("api_key", process.env.TMDB_API_KEY);
+  }
+  probeUrl.searchParams.set("query", "James Stewart");
+  const probe = await fetch(probeUrl, { headers: probeHeaders });
+  if (!probe.ok) {
+    console.error(`TMDb authentication failed (${probe.status}). Use a valid API key or Bearer token in .env.`);
+    process.exit(1);
+  }
 }
 
 // Ejecución con barra de progreso

@@ -1,6 +1,6 @@
 import ScoreBadge from "./ScoreBadge.jsx";
 
-export default function ActorCard({ actor, onOpen, mode = "Actors" }) {
+export default function ActorCard({ actor, onOpen, mode = "Actors", isDetailed = false }) {
   const projects = actor.leads || [];
   const projectTitle = mode === "Directors" ? "Top directed films" : "Top lead projects";
   return (
@@ -12,7 +12,7 @@ export default function ActorCard({ actor, onOpen, mode = "Actors" }) {
         ) : (
           <div className="grid h-full place-items-center text-slate-500">No photo</div>
         )}
-        <div className="absolute right-3 top-3"><ScoreBadge score={actor.score} size={56} /></div>
+        <div className="absolute right-3 top-3"><ScoreBadge score={actor.score} size={56} isDetailed={isDetailed} /></div>
       </div>
       <div className="p-4">
         <h2 className="text-xl font-extrabold leading-tight">{actor.name}</h2>

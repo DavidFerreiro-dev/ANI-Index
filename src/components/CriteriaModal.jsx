@@ -3,7 +3,7 @@ import { X, Award, Film, DollarSign, MessageSquare, Compass, BookOpen, Layers } 
 import ScoreBadge from "./ScoreBadge.jsx";
 
 const FALLBACK = {
-  SCORING_VERSION: "20.7",
+  SCORING_VERSION: "22.0",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
   BAYESIAN: { C: 6.5, m: 200, shrinkageK: 3 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
@@ -52,21 +52,21 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
         <div className="mt-5 inline-flex max-w-full rounded-xl border border-line bg-card/60 p-1" role="tablist">
           <button role="tab" aria-selected={activeTab === "Actors"} onClick={() => setActiveTab("Actors")}
                   className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-bold transition ${activeTab === "Actors" ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>
-            ANI Index — Actors (v20.7)
+            ANI Index — Actors (v22.0)
           </button>
           <button role="tab" aria-selected={activeTab === "Directors"} onClick={() => setActiveTab("Directors")}
                   className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-bold transition ${activeTab === "Directors" ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>
-            ANI Index — Directors (v1.1)
+            ANI Index — Directors (v2.0)
           </button>
         </div>
 
         {activeTab === "Directors" ? (
           /* ========================================================================= */
-          /*                          DIRECTORS CRITERIA (v1.1)                         */
+          /*                          DIRECTORS CRITERIA (v2.0)                         */
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 1.1 synthesizes directing careers across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 2.0 synthesizes directing careers across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
             </div>
 
             {/* Pillar Breakdown Table */}
@@ -83,7 +83,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                   <tr>
                     <td className="p-3 font-semibold text-white">Filmography Quality &amp; Consistency</td>
                     <td className="p-3 font-bold text-sky-300">40%</td>
-                    <td className="p-3">Peak (Top 4, 60%, max 1/saga) + Consistency (Top 70%, 40%, max 2/saga)</td>
+                    <td className="p-3">Peak (Top 4, 70%, max 1/saga) + Consistency (capped sliding window 6–12, 30%, max 2/saga)</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-semibold text-white">Awards &amp; Festivals Prestige</td>
@@ -138,7 +138,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                 <li><strong>Eligibility:</strong> Feature films directed by the person with runtime ≥ 60 minutes, status Released, excluding adult, video, and documentaries (genre 99). Minimum 3 valid feature films required to rank.</li>
                 <li><strong>Bayesian Prior per movie:</strong> <code className="text-sky-300 font-mono">Bayes = (v / (v + 200)) × vote_average + (200 / (v + 200)) × 6.5</code>, dampening small vote samples.</li>
                 <li><strong>Peak / Techo (60% of pillar):</strong> Calculated from the director's <strong>Top 4 valid features</strong>, capped at a strict <strong>maximum of 1 film per franchise/saga</strong> (choosing the highest-rated entry).</li>
-                <li><strong>Consistency / Consistencia (40% of pillar):</strong> Calculated over the <strong>Top 70% of their valid feature filmography</strong> (rounded up: <code className="text-sky-300 font-mono">ceil(N × 0.70)</code>, minimum 3 films), capped at a <strong>maximum of 2 films per franchise/saga</strong>.</li>
+                <li><strong>Consistency (30% of pillar):</strong> Calculated over a <strong>capped 6–12 film sliding window</strong> that scales with career length, capped at a maximum of <strong>2 films per franchise/saga</strong>.</li>
                 <li><strong>Hardened Normalization (divisor 2.35):</strong>
                   <div className="my-1.5 rounded-lg bg-card/60 p-2 font-mono text-xs text-sky-200">
                     Normalized = clamp(((Bayes - 6.0) / 2.35) × 100)
@@ -211,15 +211,15 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
               </ul>
             </div>
 
-            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">ANI Index — Directors v1.1</p>
+            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">ANI Index — Directors v2.0</p>
           </div>
         ) : (
           /* ========================================================================= */
-          /*                            ACTORS CRITERIA (v20.8)                         */
+          /*                            ACTORS CRITERIA (v22.0)                         */
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 20.8 evaluates acting careers across five pillars: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 22.0 evaluates acting careers across five pillars: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
             </div>
 
             {/* Pillar Breakdown Table */}
@@ -246,7 +246,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                   <tr>
                     <td className="p-3 font-semibold text-white">Commercial Impact</td>
                     <td className="p-3 font-bold text-sky-300">10%</td>
-                    <td className="p-3">Top 5 post-1980 commercial features (80% log gross + 20% ROI, max 1/saga)</td>
+                    <td className="p-3">Top 5 post-1980 commercial features (90% decade-adjusted log gross + 10% capped ROI, max 1/saga)</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-semibold text-white">Critical Sentiment</td>
@@ -278,7 +278,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
               </p>
               <ul className="mt-1 list-disc space-y-1 pl-5">
                 <li><strong>When Awards Prestige ≥ Base Score:</strong> <code className="text-sky-300 font-mono">Overall = 0.70 × Base + 0.30 × Awards</code> (major accolades elevate the score up to 100).</li>
-                <li><strong>When Awards Prestige &lt; Base Score:</strong> <code className="text-sky-300 font-mono">Overall = 0.85 × Base + 0.15 × Awards</code>. A reinforced 15% brake prevents franchise blockbusters without high-tier prestige honors from inflating into Diamond tier.</li>
+                <li><strong>When Awards Prestige &lt; Base Score:</strong> the brake activates only after a gap greater than 18 points. Its strength scales smoothly toward 15%, preventing franchise blockbusters without high-tier prestige honors from inflating into Diamond tier.</li>
                 <li><strong>Missing Pillars &amp; Historical Imputation:</strong> If commercial data is unavailable (especially pre-1980 careers like Cary Grant or Charlie Chaplin), Commercial Impact is conservatively imputed at 65. If 1 or 2 structural pillars are missing, the final score is capped at 89.</li>
               </ul>
             </div>

@@ -1,24 +1,37 @@
 const CACHE_PREFIX = "actor-merit-ranker:actor:";
 const DIRECTOR_CACHE_PREFIX = "actor-merit-ranker:director:";
-export const SCORING_VERSION = "20.8";
-export const DIRECTOR_SCORING_VERSION = "Director Scoring version 1.1";
+export const SCORING_VERSION = "22.0";
+export const DIRECTOR_SCORING_VERSION = "Director Scoring version 2.0";
+export const ANI_ALGO_VERSION = "actors-v22.0_directors-v2.0";
+const ANI_ALGO_VERSION_KEY = "ani_algo_version";
+
+export function purgeStaleAniCache() {
+  try {
+    const storedVersion = localStorage.getItem(ANI_ALGO_VERSION_KEY);
+    if (storedVersion === ANI_ALGO_VERSION) return;
+    for (let index = localStorage.length - 1; index >= 0; index--) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(CACHE_PREFIX) || key?.startsWith(DIRECTOR_CACHE_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    }
+    localStorage.setItem(ANI_ALGO_VERSION_KEY, ANI_ALGO_VERSION);
+  } catch {}
+}
 
 export function isActorValid(actor) {
   if (!actor || typeof actor !== "object") return false;
   return (
     actor.scoring_version === SCORING_VERSION ||
-    actor.scoring_version === "20.8" ||
-    actor.scoring_version === "v20.8"
+    actor.scoring_version === "22.0" ||
+    actor.scoring_version === "v22.0"
   );
 }
 
 export function isDirectorValid(dir) {
   if (!dir || typeof dir !== "object") return false;
-  return (
-    dir.scoring_version === DIRECTOR_SCORING_VERSION ||
-    dir.scoring_version === "Director Scoring version 1.1" ||
-    dir.scoring_version === "Director Scoring v1.1"
-  );
+  return dir.scoring_version === DIRECTOR_SCORING_VERSION ||
+    dir.scoring_version === "Director Scoring v2.0";
 }
 
 export function getCachedActor(id) {
@@ -69,7 +82,7 @@ export function getCachedDirector(id) {
     if (!raw) return null;
     const director = JSON.parse(raw);
     if (!director || !director.score) return null;
-    if (director.scoring_version !== DIRECTOR_SCORING_VERSION && director.scoring_version !== "Director Scoring v1.1") {
+    if (!isDirectorValid(director)) {
       localStorage.removeItem(DIRECTOR_CACHE_PREFIX + id);
       return null;
     }

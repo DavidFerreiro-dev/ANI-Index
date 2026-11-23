@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import ScoreBadge from "./ScoreBadge.jsx";
+import { formatAniScore } from "../utils/aniScore.js";
 
-export default function ActorModal({ actor, onClose }) {
+export default function ActorModal({ actor, onClose, isDetailed = false }) {
   const [config, setConfig] = useState(null);
   useEffect(() => {
     fetch("/api/config").then((response) => response.ok ? response.json() : null).then(setConfig).catch(() => {});
@@ -38,7 +39,7 @@ export default function ActorModal({ actor, onClose }) {
           <div className="min-w-0 flex-1">
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">{actor.name}</h2>
             <div className="mt-3 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3 justify-center sm:justify-start">
-              <ScoreBadge score={actor.score} size={68} />
+              <ScoreBadge score={actor.score} size={68} isDetailed={isDetailed} />
               {(actor.name === "Mikey Madison" || String(actor.id) === "2073800") ? (
                 <div className="flex flex-col items-center sm:items-start">
                   <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-300 tracking-wide uppercase">
@@ -74,7 +75,7 @@ export default function ActorModal({ actor, onClose }) {
               <div key={k}>
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="font-semibold text-slate-200">{label} <span className="text-xs sm:text-sm font-normal text-slate-400">({Math.round(w * 100)}%)</span></span>
-                  <span className="font-extrabold text-white">{v === null ? "Not enough review data" : v}</span>
+                  <span className="font-extrabold text-white">{v === null ? "Not enough review data" : formatAniScore(v, isDetailed)}</span>
                 </div>
                 <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-card">
                   <div className="h-full rounded-full bg-sky-400 transition-all duration-500" style={{ width: `${v ?? 0}%` }} />
