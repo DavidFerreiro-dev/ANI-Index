@@ -76,7 +76,7 @@ const names = [
 ];
 
 // Configuración
-const CONCURRENCY = 3;
+const CONCURRENCY = 2;
 const REVIEWS_CONCURRENCY = 4;
 const BAR_SIZE = 30;
 
@@ -243,6 +243,14 @@ let failed = 0;
 
 console.log(`\nGenerating actor seed: ${names.length} actors\n`);
 
+let existingByName = new Map();
+try {
+  const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+  const existingOutput = path.resolve(scriptDirectory, "../public/seed-actors.json");
+  const existing = JSON.parse(await fs.readFile(existingOutput, "utf8"));
+  existingByName = new Map(existing.map((actor) => [actor.name, actor]));
+} catch {}
+
 const actors = await mapWithConcurrency(
   names,
   CONCURRENCY,
@@ -251,8 +259,11 @@ const actors = await mapWithConcurrency(
 
     completed++;
 
-    if (result) successful++;
-    else failed++;
+    if (result) {
+      successful++;
+    } else {
+      failed++;
+    }
 
     drawProgress(
       completed,
@@ -262,7 +273,7 @@ const actors = await mapWithConcurrency(
       startTime
     );
 
-    return result;
+    return result || existingByName.get(name) || null;
   }
 );
 

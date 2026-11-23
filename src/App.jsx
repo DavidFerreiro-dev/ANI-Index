@@ -20,17 +20,11 @@ export default function App() {
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [mode, setMode] = useState("Actors");
   const [directors, setDirectors] = useState([]);
-  const [isDetailedScore, setIsDetailedScore] = useState(() => {
-    try { return localStorage.getItem("ani_detailed_score") === "true"; } catch { return false; }
-  });
+  const [isDetailedScore, setIsDetailedScore] = useState(false);
 
   useEffect(() => {
     purgeStaleAniCache();
   }, []);
-
-  useEffect(() => {
-    try { localStorage.setItem("ani_detailed_score", String(isDetailedScore)); } catch {}
-  }, [isDetailedScore]);
 
   const loadActors = useCallback(async () => {
     const cached = getCachedActors();
