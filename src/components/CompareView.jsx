@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Search, X, Columns2 } from "lucide-react";
 import ScoreBadge from "./ScoreBadge.jsx";
-import { cacheActor, getCachedActor } from "../utils/actorCache.js";
+import { cacheActor, getCachedActor, cacheDirector, getCachedDirector } from "../utils/actorCache.js";
 
 const PILLARS = [
   ["quality", "Filmography Quality"],
@@ -10,8 +10,15 @@ const PILLARS = [
   ["sentiment", "Critical Sentiment"],
   ["commercial", "Commercial Impact"]
 ];
+const DIRECTOR_PILLARS = [
+  ["quality", "Filmography Quality & Consistency"],
+  ["awards", "Awards & Festivals Prestige"],
+  ["commercial", "Commercial Impact"],
+  ["versatility", "Authorship & Versatility"],
+  ["legacy", "Cultural Legacy"]
+];
 
-function ActorSearch({ api, side, actor, onSelect, onClear }) {
+function ActorSearch({ api, side, actor, onSelect, onClear, mode }) {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -27,10 +34,10 @@ function ActorSearch({ api, side, actor, onSelect, onClear }) {
     const timer = setTimeout(async () => {
       setBusy(true);
       try {
-        const response = await fetch(`${api}/api/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`${api}/api/search?q=${encodeURIComponent(query)}&mode=${mode === "Directors" ? "directors" : "actors"}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || "Search failed");
-        setItems((Array.isArray(data) ? data : []).filter((item) => item.type === "Actor"));
+        setItems((Array.isArray(data) ? data : []).filter((item) => mode === "Directors" ? item.type === "Director" : item.type === "Actor"));
         setOpen(true);
       } catch {
         setItems([]);
@@ -40,7 +47,7 @@ function ActorSearch({ api, side, actor, onSelect, onClear }) {
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [query, api]);
+  }, [query, api, mode]);
 
   useEffect(() => {
     const close = (event) => {
@@ -57,8 +64,8 @@ function ActorSearch({ api, side, actor, onSelect, onClear }) {
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         onFocus={() => items.length && setOpen(true)}
-        placeholder="Search an actor..."
-        aria-label={`${side} actor search`}
+        placeholder={mode === "Directors" ? "Search a director..." : "Search an actor..."}
+        aria-label={`${side} ${mode === "Directors" ? "director" : "actor"} search`}
         className="w-full rounded-full border border-line bg-card py-3 pl-11 pr-11 text-sm outline-none focus:border-sky-400"
       />
       {actor && (
@@ -86,34 +93,36 @@ function ActorSearch({ api, side, actor, onSelect, onClear }) {
   );
 }
 
-function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight }) {
+function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight, mode }) {
+  const pillars = mode === "Directors" ? DIRECTOR_PILLARS : PILLARS;
   return (
     <section className="min-w-0 border-line lg:border-r lg:last:border-r-0">
-      <ActorSearch api={api} side={side} actor={actor} onSelect={onSelect} onClear={onClear} />
+      <ActorSearch api={api} side={side} actor={actor} onSelect={onSelect} onClear={onClear} mode={mode} />
       {loading && (
         <div className="grid min-h-[430px] place-items-center rounded-2xl border border-line bg-card">
-          <div className="flex items-center gap-2 text-slate-300"><Loader2 className="animate-spin" size={20} />Loading actor...</div>
+          <div className="flex items-center gap-2 text-slate-300"><Loader2 className="animate-spin" size={20} />Loading {mode === "Directors" ? "director" : "actor"}...</div>
         </div>
       )}
       {!loading && !actor && (
         <div className="grid min-h-[430px] place-items-center rounded-2xl border border-dashed border-line text-slate-500">
-          Search for an actor
+          Search for {mode === "Directors" ? "a director" : "an actor"}
         </div>
       )}
       {!loading && actor && (
         <div>
           {actor.profile
-            ? <img src={`https://image.tmdb.org/t/p/w500${actor.profile}`} alt={actor.name} className="mx-auto h-72 w-48 rounded-2xl object-cover sm:h-80 sm:w-56" />
+            ? <img src={`https://image.tmdb.org/t/p/w500${actor.profile}`} alt={actor.name} className="mx-auto h-72 w-48 rounded-2xl object-cover object-top sm:h-80 sm:w-56" />
             : <div className="mx-auto grid h-72 w-48 place-items-center rounded-2xl bg-card text-slate-500">No photo</div>}
           <h2 className="mt-4 text-center text-2xl font-extrabold">{actor.name}</h2>
           <p className="mt-2 text-center text-xs text-slate-500">
-            {actor.valid_work_count ?? "Unknown"} valid works · {actor.award_count ?? 0} counted acting awards
-            {actor.lead_movie_count != null ? ` · ${actor.lead_movie_count} lead movies` : ""}
+            {mode === "Directors"
+              ? `${actor.valid_work_count ?? "Unknown"} valid feature films · ${actor.written_movie_count ?? 0} written/co-written · ${actor.award_count ?? 0} counted awards`
+              : `${actor.valid_work_count ?? "Unknown"} valid works · ${actor.award_count ?? 0} counted acting awards${actor.lead_movie_count != null ? ` · ${actor.lead_movie_count} lead movies` : ""}`}
           </p>
           <div className="mt-3 flex justify-center"><ScoreBadge score={actor.score} size={72} /></div>
 
           <div className="mt-6 space-y-4">
-            {PILLARS.map(([key, label]) => {
+            {pillars.map(([key, label]) => {
               const value = actor.pillars?.[key];
               const isWinner = value !== null && value !== undefined &&
                 highlight[key] === actor.id;
@@ -149,7 +158,7 @@ function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight }
                   ))}
                 </ul>}
 
-          <h3 className="mt-7 text-lg font-bold">Top Lead Projects</h3>
+          <h3 className="mt-7 text-lg font-bold">{mode === "Directors" ? "Top Directed Films" : "Top Lead Projects"}</h3>
           <ul className="mt-2 space-y-1">
             {(actor.leads || []).slice(0, 6).map((project) => (
               <li key={project.id} className="flex justify-between gap-3 rounded-lg px-3 py-2 text-sm hover:bg-card">
@@ -157,7 +166,7 @@ function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight }
                 <span className="text-slate-400">{project.rating}</span>
               </li>
             ))}
-            {(!actor.leads || actor.leads.length === 0) && <li className="text-sm text-slate-500">No lead roles found</li>}
+            {(!actor.leads || actor.leads.length === 0) && <li className="text-sm text-slate-500">{mode === "Directors" ? "No directed films found" : "No lead roles found"}</li>}
           </ul>
         </div>
       )}
@@ -165,32 +174,34 @@ function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight }
   );
 }
 
-export default function CompareView({ api, onClose, initialActors = [] }) {
+export default function CompareView({ api, onClose, initialActors = [], mode = "Actors" }) {
   const [left, setLeft] = useState(initialActors[0] || null);
   const [right, setRight] = useState(initialActors[1] || null);
   const [leftLoading, setLeftLoading] = useState(false);
   const [rightLoading, setRightLoading] = useState(false);
 
   const loadActor = async (item, side) => {
-    const cached = getCachedActor(item.id);
+    const cached = mode === "Directors" ? getCachedDirector(item.id) : getCachedActor(item.id);
     if (cached) {
       side === "left" ? setLeft(cached) : setRight(cached);
       return;
     }
     side === "left" ? setLeftLoading(true) : setRightLoading(true);
     try {
-      const response = await fetch(`${api}/api/actors/${item.id}`);
-      if (!response.ok) throw new Error("Could not load actor");
-      const actor = await response.json();
-      cacheActor(actor);
-      side === "left" ? setLeft(actor) : setRight(actor);
+      const endpoint = mode === "Directors" ? "directors" : "actors";
+      const response = await fetch(`${api}/api/${endpoint}/${item.id}`);
+      if (!response.ok) throw new Error(`Could not load ${mode === "Directors" ? "director" : "actor"}`);
+      const person = await response.json();
+      if (mode === "Directors") cacheDirector(person);
+      else cacheActor(person);
+      side === "left" ? setLeft(person) : setRight(person);
     } finally {
       side === "left" ? setLeftLoading(false) : setRightLoading(false);
     }
   };
 
   const highlight = {};
-  PILLARS.forEach(([key]) => {
+  (mode === "Directors" ? DIRECTOR_PILLARS : PILLARS).forEach(([key]) => {
     const leftValue = left?.pillars?.[key];
     const rightValue = right?.pillars?.[key];
     if (leftValue != null && rightValue != null && leftValue !== rightValue) {
@@ -203,16 +214,16 @@ export default function CompareView({ api, onClose, initialActors = [] }) {
       <header className="mx-auto mb-6 flex max-w-7xl items-center justify-between">
         <div className="flex items-center gap-3">
           <Columns2 size={24} className="text-sky-400" />
-          <h1 className="text-2xl font-extrabold">Compare actors</h1>
+          <h1 className="text-2xl font-extrabold">Compare {mode === "Directors" ? "directors" : "actors"}</h1>
         </div>
         <button onClick={onClose} className="flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-bold hover:bg-card">
           <X size={17} /> Close
         </button>
       </header>
       <main className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
-        <ActorColumn api={api} side="Actor A" actor={left} loading={leftLoading}
+        <ActorColumn api={api} side={mode === "Directors" ? "Director A" : "Actor A"} actor={left} loading={leftLoading} mode={mode}
                      onSelect={(item) => loadActor(item, "left")} onClear={() => setLeft(null)} highlight={highlight} />
-        <ActorColumn api={api} side="Actor B" actor={right} loading={rightLoading}
+        <ActorColumn api={api} side={mode === "Directors" ? "Director B" : "Actor B"} actor={right} loading={rightLoading} mode={mode}
                      onSelect={(item) => loadActor(item, "right")} onClear={() => setRight(null)} highlight={highlight} />
       </main>
     </div>

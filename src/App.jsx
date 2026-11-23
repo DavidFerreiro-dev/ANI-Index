@@ -5,20 +5,21 @@ import ActorCard from "./components/ActorCard.jsx";
 import ActorModal from "./components/ActorModal.jsx";
 import CriteriaModal from "./components/CriteriaModal.jsx";
 import CompareView from "./components/CompareView.jsx";
-import { cacheActor, getCachedActor, getCachedActors } from "./utils/actorCache.js";
+import DirectorModal from "./components/DirectorModal.jsx";
+import { cacheActor, getCachedActor, getCachedActors, cacheDirector, getCachedDirector, getCachedDirectors } from "./utils/actorCache.js";
 
 const API = "";
 
 export default function App() {
   const [actors, setActors] = useState([]);
-  const [castActors, setCastActors] = useState([]);
-  const [movie, setMovie] = useState(null);
   const [sort, setSort] = useState("top");
   const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(null);
   const [criteria, setCriteria] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [mode, setMode] = useState("Actors");
+  const [directors, setDirectors] = useState([]);
 
   const loadActors = useCallback(async () => {
     const cached = getCachedActors();
@@ -58,90 +59,152 @@ export default function App() {
     return () => { active = false; };
   }, [loadActors]);
 
-  const openActor = async (id) => {
-    setError(""); setLoading("Calculating this actor’s score… this can take up to 20 seconds.");
-    const cached = getCachedActor(id);
-    if (cached && cached.scoring_version === 18) {
-      setSelected(cached);
-      setLoading("");
+  const loadDirectors = useCallback(async () => {
+    const cached = getCachedDirectors();
+    if (cached.length) setDirectors((seed) => {
+      const merged = new Map(seed.map((director) => [director.id, director]));
+      for (const director of cached) merged.set(director.id, director);
+      return [...merged.values()];
+    });
+    try {
+      const response = await fetch(`${API}/api/directors`);
+      if (!response.ok) throw new Error("Ranking service unavailable");
+      const liveDirectors = await response.json();
+      setDirectors((seed) => {
+        const merged = new Map(seed.map((director) => [director.id, director]));
+        for (const director of liveDirectors) merged.set(director.id, director);
+        return [...merged.values()];
+      });
+      liveDirectors.forEach(cacheDirector);
+    } catch {
+      // The committed seed remains the complete fallback ranking.
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/seed-directors.json")
+      .then((response) => response.ok ? response.json() : [])
+      .then((seed) => {
+        if (active) setDirectors((current) => {
+          const merged = new Map(seed.map((director) => [director.id, director]));
+          for (const director of current) merged.set(director.id, director);
+          return [...merged.values()];
+        });
+      })
+      .catch(() => {});
+    loadDirectors();
+    return () => { active = false; };
+  }, [loadDirectors]);
+
+  const openActor = async (id, actorObj = null) => {
+    setError("");
+    const numId = Number(id);
+    if (actorObj && actorObj.pillars && actorObj.score) {
+      setSelected(actorObj);
       return;
     }
+    const memActor = actors.find((a) => a.id === numId && a.pillars && a.score);
+    if (memActor) {
+      setSelected(memActor);
+      return;
+    }
+    const cached = getCachedActor(numId);
+    if (cached && cached.pillars && cached.score) {
+      setSelected(cached);
+      return;
+    }
+    setLoading("Calculating this actor’s score… this can take up to 20 seconds.");
     try {
-      const r = await fetch(`${API}/api/actors/${id}`);
+      const r = await fetch(`${API}/api/actors/${numId}`);
       if (!r.ok) throw new Error((await r.json()).detail || "Request failed");
       const a = await r.json();
       cacheActor(a);
-      setActors((p) => (p.some((x) => x.id === a.id) ? p : [...p, a]));
+      setActors((p) => (p.some((x) => x.id === a.id) ? p.map((x) => (x.id === a.id ? a : x)) : [...p, a]));
       setSelected(a);
     } catch (e) { setError("Could not load this actor: " + e.message); }
     setLoading("");
   };
 
-  const pickMovie = async (m) => {
-    setSelected(null); setError(""); setLoading(`Loading the cast of ${m.title}…`);
+  const openDirector = async (id, directorObj = null) => {
+    setError("");
+    const numId = Number(id);
+    if (directorObj && directorObj.pillars && directorObj.score) {
+      setSelected(directorObj);
+      return;
+    }
+    const memDirector = directors.find((d) => d.id === numId && d.pillars && d.score);
+    if (memDirector) {
+      setSelected(memDirector);
+      return;
+    }
+    const cached = getCachedDirector(numId);
+    if (cached && cached.pillars && cached.score) {
+      setSelected(cached);
+      return;
+    }
+    setLoading("Calculating this director’s score…");
     try {
-      const r = await fetch(`${API}/api/movies/${m.id}/cast`);
-      if (!r.ok) throw new Error((await r.json()).detail || "Request failed");
-      const d = await r.json();
-      const cachedActors = d.actors || [];
-      setMovie(d.movie); setCastActors(cachedActors);
-      setActors((p) => [...p, ...cachedActors.filter((a) => !p.some((x) => x.id === a.id))]);
-      const uncached = d.missing || [];
-      await Promise.all(uncached.map(async (id) => {
-        try {
-          const actorResponse = await fetch(`${API}/api/actors/${id}`);
-          if (!actorResponse.ok) return;
-          const actor = await actorResponse.json();
-          cacheActor(actor);
-          setCastActors((current) => current.some((item) => item.id === actor.id) ? current : [...current, actor]);
-          setActors((current) => current.some((item) => item.id === actor.id) ? current : [...current, actor]);
-        } catch {}
-      }));
-    } catch (e) { setError("Could not load this movie: " + e.message); }
+      const response = await fetch(`${API}/api/directors/${numId}`);
+      if (!response.ok) throw new Error((await response.json()).detail || "Request failed");
+      const director = await response.json();
+      if (director.valid_work_count < 3) throw new Error("Director has fewer than 3 valid feature films");
+      cacheDirector(director);
+      setDirectors((current) => current.some((item) => item.id === director.id)
+        ? current.map((item) => item.id === director.id ? director : item)
+        : [...current, director]);
+      setSelected(director);
+    } catch (error) {
+      setError("Could not load this director: " + error.message);
+    }
     setLoading("");
   };
 
-  const onPick = (it) => (it.type === "Actor" ? openActor(it.id) : pickMovie({ id: it.id, title: it.name }));
+  const onPick = (it) => {
+    if (it.type === "Actor") return openActor(it.id);
+    if (it.type === "Director") return openDirector(it.id);
+  };
 
   const shown = useMemo(() => {
-    const list = [...(movie ? castActors : actors)];
+    const list = mode === "Directors" ? [...directors] : [...actors];
     return list.sort(sort === "az" ? (a, b) => a.name.localeCompare(b.name) : (a, b) => b.score - a.score);
-  }, [actors, castActors, movie, sort]);
+  }, [actors, sort, mode, directors]);
 
   return (
-    <div className="min-h-screen">
-      <header className="px-4 pb-6 pt-14 text-center">
-        <h1 className="mb-8 text-4xl font-extrabold tracking-tight sm:text-5xl">Who really can act?</h1>
+    <div className="min-h-screen overflow-x-clip">
+      <header className="relative z-40 w-full max-w-7xl mx-auto px-4 pb-6 pt-8 sm:pt-14 text-center">
+        <h1 className="mb-2 text-3xl font-extrabold tracking-tight sm:mb-3 sm:text-5xl">{mode === "Directors" ? "Who really can direct?" : "Who really can act?"}</h1>
+        <p className="mb-5 sm:mb-7 text-xs sm:text-sm font-medium tracking-wide text-slate-400">
+          Powered by the <span className="text-sky-400 font-semibold cursor-help" title="Artistic & Narrative Index">ANI Index</span> <span className="text-slate-500 font-normal hidden sm:inline">(Artistic &amp; Narrative Index)</span>
+        </p>
+        <div className="mb-5 inline-flex max-w-full rounded-full border border-line bg-card p-1 shadow-inner" role="tablist" aria-label="Ranking type">
+          {["Actors", "Directors"].map((tab) => (
+            <button key={tab} role="tab" aria-selected={mode === tab} onClick={() => { setMode(tab); setSelected(null); }}
+                    className={`rounded-full px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold transition ${mode === tab ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>{tab}</button>
+          ))}
+        </div>
         <div className="mx-auto flex w-full max-w-3xl flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-          <div className="min-w-0 flex-1"><SearchBar api={API} onPick={onPick} onError={(message) => setError(`Could not search: ${message}`)} /></div>
+          <div className="relative z-50 min-w-0 flex-1"><SearchBar key={mode} api={API} mode={mode} onPick={onPick} onError={(message) => setError(`Could not search: ${message}`)} /></div>
           <button onClick={() => setComparisonOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-400/60 bg-sky-400/10 px-5 py-3 text-sm font-bold text-sky-300 hover:bg-sky-400/20">
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-400/60 bg-sky-400/10 px-5 py-2.5 sm:py-3 text-sm font-bold text-sky-300 hover:bg-sky-400/20 transition">
             <Columns2 size={18} /> Compare
           </button>
         </div>
-        <div className="mt-6 inline-flex rounded-full border border-line bg-card p-1" role="tablist">
+        <div className="mt-5 sm:mt-6 inline-flex max-w-full rounded-full border border-line bg-card p-1 shadow-inner" role="tablist">
           {[["top", "Top Rated"], ["az", "A–Z"]].map(([k, l]) => (
             <button key={k} role="tab" aria-selected={sort === k} onClick={() => setSort(k)}
-                    className={`rounded-full px-5 py-2 text-sm font-bold transition ${sort === k ? "bg-sky-400 text-sky-950" : "text-slate-300 hover:text-white"}`}>{l}</button>
+                    className={`rounded-full px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold transition ${sort === k ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>{l}</button>
           ))}
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 pb-16">
-        {movie && (
-          <div className="mb-5 flex justify-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/15 px-4 py-2 text-sm font-bold text-amber-300">
-              Movie: {movie.title}
-              <button onClick={() => { setMovie(null); setCastActors([]); }} aria-label="Clear movie filter"><X size={16} /></button>
-            </span>
-          </div>
-        )}
+      <main className="relative z-10 mx-auto max-w-7xl px-4 pb-16">
         {error && <p className="mb-5 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-center text-sm text-red-300">{error}</p>}
         {loading && <p className="mb-5 flex items-center justify-center gap-2 text-slate-300"><Loader2 className="animate-spin" size={18} />{loading}</p>}
-        {!loading && shown.length === 0 && <p className="text-center text-slate-500">No actors available. Try refreshing the page.</p>}
+        {!loading && shown.length === 0 && <p className="text-center text-slate-500">No {mode === "Directors" ? "directors" : "actors"} available. Try refreshing the page.</p>}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shown.map((a) => (
-            <ActorCard key={a.id} actor={a} onOpen={setSelected} onMovie={pickMovie} />
+            <ActorCard key={a.id} actor={a} mode={mode} onOpen={(item) => (mode === "Directors" ? openDirector(item.id, item) : openActor(item.id, item))} />
           ))}
         </div>
       </main>
@@ -157,9 +220,11 @@ export default function App() {
         </div>
       </footer>
 
-      {selected && <ActorModal actor={selected} onClose={() => setSelected(null)} onMovie={pickMovie} />}
-      {criteria && <CriteriaModal onClose={() => setCriteria(false)} />}
-      {comparisonOpen && <CompareView api={API} onClose={() => setComparisonOpen(false)} />}
+      {selected && (mode === "Directors"
+        ? <DirectorModal director={selected} onClose={() => setSelected(null)} />
+        : <ActorModal actor={selected} onClose={() => setSelected(null)} />)}
+      {criteria && <CriteriaModal mode={mode} onClose={() => setCriteria(false)} />}
+      {comparisonOpen && <CompareView api={API} mode={mode} onClose={() => setComparisonOpen(false)} />}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 
-export default function SearchBar({ api, onPick, onError }) {
+export default function SearchBar({ api, onPick, onError, mode = "Actors" }) {
   const [q, setQ] = useState("");
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -13,7 +13,7 @@ export default function SearchBar({ api, onPick, onError }) {
     const t = setTimeout(async () => {
       setBusy(true);
       try {
-        const response = await fetch(`${api}/api/search?q=${encodeURIComponent(q)}`);
+        const response = await fetch(`${api}/api/search?q=${encodeURIComponent(q)}&mode=${mode === "Directors" ? "directors" : "actors"}`);
         const contentType = response.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) {
           throw new Error("Search service unavailable. Run the app with Netlify Dev.");
@@ -22,7 +22,7 @@ export default function SearchBar({ api, onPick, onError }) {
         if (!response.ok) {
           throw new Error(data.detail || "Search failed");
         }
-        setItems(Array.isArray(data) ? data : []);
+        setItems(Array.isArray(data) ? data.filter((it) => it.type === "Actor" || it.type === "Director") : []);
         setOpen(true);
       } catch (error) {
         setItems([]);
@@ -32,7 +32,7 @@ export default function SearchBar({ api, onPick, onError }) {
       setBusy(false);
     }, 250);
     return () => clearTimeout(t);
-  }, [q, api]);
+  }, [q, api, mode]);
 
   useEffect(() => {
     const h = (e) => box.current && !box.current.contains(e.target) && setOpen(false);
@@ -41,14 +41,14 @@ export default function SearchBar({ api, onPick, onError }) {
   }, []);
 
   return (
-    <div ref={box} className="relative mx-auto w-full max-w-2xl">
+    <div ref={box} className="relative z-50 mx-auto w-full max-w-2xl">
       <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={22} />
       <input value={q} onChange={(e) => setQ(e.target.value)} onFocus={() => items.length && setOpen(true)}
-             placeholder="Search actors or movies..." aria-label="Search actors or movies"
+             placeholder={mode === "Directors" ? "Search directors..." : "Search actors..."} aria-label={mode === "Directors" ? "Search directors" : "Search actors"}
              className="w-full rounded-full border border-line bg-card py-4 pl-14 pr-12 text-lg placeholder:text-slate-500 focus:border-sky-400 focus:outline-none" />
       {busy && <Loader2 className="absolute right-5 top-1/2 -translate-y-1/2 animate-spin text-slate-400" size={20} />}
       {open && items.length > 0 && (
-        <ul className="absolute z-30 mt-2 max-h-96 w-full overflow-auto rounded-2xl border border-line bg-card p-2 shadow-2xl">
+        <ul className="absolute z-[9999] mt-2 max-h-96 w-full overflow-auto rounded-2xl border border-line bg-card p-2 shadow-2xl">
           {items.map((it) => (
             <li key={it.type + it.id}>
               <button onClick={() => { setOpen(false); setQ(""); onPick(it); }}

@@ -7,6 +7,7 @@
     "dev": "netlify dev",
     "vite": "vite --host 127.0.0.1",
     "seed": "node scripts/generate-seed.mjs",
+    "seed-directors": "node scripts/generate-director-seed.mjs",
     "audit": "node scripts/audit.mjs",
     "resolve-directors": "node scripts/resolve-directors.mjs",
     "check-tmdb": "node scripts/check-tmdb.mjs",

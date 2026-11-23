@@ -63,23 +63,29 @@ export async function fetchAwards(wikidataId, person = {}) {
   if (!qid) qid = await searchWikidataActor(person.name, person.birth);
   if (!qid) return { available: false, status: "unavailable", awards: [] };
 
-  const directP166 = await sparql(`SELECT ?awardLabel ?year ?workLabel WHERE {
+  const directP166 = await sparql(`SELECT ?award ?awardLabel ?year ?work ?workLabel WHERE {
     wd:${qid} p:P166 ?statement . ?statement ps:P166 ?award .
     BIND("won" AS ?kind)
     OPTIONAL { ?statement pq:P585 ?date . BIND(YEAR(?date) AS ?year) }
+    OPTIONAL { ?statement pq:P805 ?edition . OPTIONAL { ?edition wdt:P585 ?editionDate } }
+    BIND(COALESCE(?year, YEAR(?editionDate)) AS ?resolvedYear)
     OPTIONAL { ?statement pq:P1686 ?work }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }`);
-  const directP1411 = await sparql(`SELECT ?awardLabel ?year ?workLabel WHERE {
+  const directP1411 = await sparql(`SELECT ?award ?awardLabel ?year ?work ?workLabel WHERE {
     wd:${qid} p:P1411 ?statement . ?statement ps:P1411 ?award .
     BIND("nominated" AS ?kind)
     OPTIONAL { ?statement pq:P585 ?date . BIND(YEAR(?date) AS ?year) }
+    OPTIONAL { ?statement pq:P805 ?edition . OPTIONAL { ?edition wdt:P585 ?editionDate } }
+    BIND(COALESCE(?year, YEAR(?editionDate)) AS ?resolvedYear)
     OPTIONAL { ?statement pq:P1686 ?work }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }`);
-  const inverseP1346 = await sparql(`SELECT ?awardLabel ?year ?workLabel WHERE {
+  const inverseP1346 = await sparql(`SELECT ?award ?awardLabel ?year ?work ?workLabel WHERE {
     ?award wdt:P1346 wd:${qid} .
     OPTIONAL { ?award wdt:P585 ?date . BIND(YEAR(?date) AS ?year) }
+    OPTIONAL { ?award wdt:P805 ?edition . OPTIONAL { ?edition wdt:P585 ?editionDate } }
+    BIND(COALESCE(?year, YEAR(?editionDate)) AS ?resolvedYear)
     OPTIONAL { ?award wdt:P1686 ?work }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }`);
@@ -90,15 +96,21 @@ export async function fetchAwards(wikidataId, person = {}) {
   const awards = [
     ...directP166.bindings.map((row) => ({
       label: row.awardLabel?.value || "", kind: "won",
-      year: row.year?.value || "", work: row.workLabel?.value || ""
+      year: row.resolvedYear?.value || row.year?.value || "", work: row.workLabel?.value || "",
+      awardQid: row.award?.value?.match(/Q\d+$/)?.[0] || "",
+      workQid: row.work?.value?.match(/Q\d+$/)?.[0] || ""
     })),
     ...directP1411.bindings.map((row) => ({
       label: row.awardLabel?.value || "", kind: "nominated",
-      year: row.year?.value || "", work: row.workLabel?.value || ""
+      year: row.resolvedYear?.value || row.year?.value || "", work: row.workLabel?.value || "",
+      awardQid: row.award?.value?.match(/Q\d+$/)?.[0] || "",
+      workQid: row.work?.value?.match(/Q\d+$/)?.[0] || ""
     })),
     ...inverseP1346.bindings.map((row) => ({
       label: row.awardLabel?.value || "", kind: "won",
-      year: row.year?.value || "", work: row.workLabel?.value || ""
+      year: row.resolvedYear?.value || row.year?.value || "", work: row.workLabel?.value || "",
+      awardQid: row.award?.value?.match(/Q\d+$/)?.[0] || "",
+      workQid: row.work?.value?.match(/Q\d+$/)?.[0] || ""
     }))
   ].filter((award) => award.label);
   return { available: true, status: "available", awards };

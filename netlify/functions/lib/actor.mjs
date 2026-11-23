@@ -58,6 +58,22 @@ export async function qualityContext(personId, credits, tv = []) {
     if (collectionId && sagaIds.has(collectionId)) sagaMovieIds.push(topMovies[index].id);
   });
   const commercialDetails = await Promise.all(valid.map((movie) => movieDetails(movie.id)));
+  const collectionByMovieId = new Map();
+  commercialDetails.forEach((details, index) => {
+    if (details?.belongs_to_collection?.id) {
+      collectionByMovieId.set(valid[index].id, {
+        id: details.belongs_to_collection.id,
+        name: details.belongs_to_collection.name
+      });
+    }
+  });
+  allWorks.forEach((work) => {
+    const col = collectionByMovieId.get(work.id);
+    if (col) {
+      work.collectionId = col.id;
+      work.collectionName = col.name;
+    }
+  });
   const commercialEntries = commercialDetails.map((details, index) => {
     const movie = valid[index];
     const weight = movie.order === 0 ? 1 : movie.order === 1 ? 0.8 :
@@ -66,9 +82,10 @@ export async function qualityContext(personId, credits, tv = []) {
       id: movie.id,
       title: details?.title || movie.title || "",
       revenue: details?.revenue || 0,
+      budget: details?.budget || 0,
       release_date: details?.release_date || movie.release_date || "",
       belongs_to_collection: details?.belongs_to_collection || null,
-      weight: weight * (directorMovieIds.includes(movie.id) ? 1.25 : 1)
+      weight
     };
   });
   const standaloneMovies = [];
@@ -113,6 +130,7 @@ export async function qualityContext(personId, credits, tv = []) {
       Number(movie.release_date.slice(0, 4)) >= 1980
     ).length,
     commercialExcluded,
+    collectionByMovieId,
     allWorks
   };
 }

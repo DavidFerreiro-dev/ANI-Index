@@ -20,6 +20,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/directors/*"
+  to = "/.netlify/functions/directors/:splat"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200

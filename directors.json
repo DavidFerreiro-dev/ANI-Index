@@ -84,7 +84,7 @@
   { "name": "Theo Angelopoulos", "tmdb_id": 10316 },
   { "name": "Lars von Trier", "tmdb_id": 42 },
   { "name": "Jane Campion", "tmdb_id": 10757 },
-  { "name": "Greta Gerwig", "tmdb_id": null },
+  { "name": "Greta Gerwig", "tmdb_id": 45400 },
   { "name": "Wes Anderson", "tmdb_id": 5655 },
   { "name": "Darren Aronofsky", "tmdb_id": 6431 },
   { "name": "M. Night Shyamalan", "tmdb_id": 11614 },
@@ -147,5 +147,16 @@
   { "name": "Rolf de Heer", "tmdb_id": 112674 },
   { "name": "Robert Siodmak", "tmdb_id": 5029 },
   { "name": "Elia Kazan", "tmdb_id": 2746 },
-  { "name": "Yorgos Lanthimos", "tmdb_id": 122423 }
+  { "name": "Yorgos Lanthimos", "tmdb_id": 122423 },
+  { "name": "Sean Baker", "tmdb_id": 118415 },
+  { "name": "Robert Eggers", "tmdb_id": 138781 },
+  { "name": "Josh Safdie", "tmdb_id": 129561 },
+  { "name": "Benny Safdie", "tmdb_id": 227564 },
+  { "name": "Denis Villeneuve", "tmdb_id": 137427 },
+  { "name": "Damien Chazelle", "tmdb_id": 136495 },
+  { "name": "David Cronenberg", "tmdb_id": 224 },
+  { "name": "Claire Denis", "tmdb_id": 9888 },
+  { "name": "Matt Reeves", "tmdb_id": 32278 },
+  { "name": "Ari Aster", "tmdb_id": 1145520 },
+  { "name": "Jonathan Glazer", "tmdb_id": 66728 }
 ]
