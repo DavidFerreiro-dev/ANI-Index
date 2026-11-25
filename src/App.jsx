@@ -6,6 +6,7 @@ import ActorModal from "./components/ActorModal.jsx";
 import CriteriaModal from "./components/CriteriaModal.jsx";
 import CompareView from "./components/CompareView.jsx";
 import DirectorModal from "./components/DirectorModal.jsx";
+import MovieModal from "./components/MovieModal.jsx";
 import ActorEmbed from "./components/ActorEmbed.jsx";
 import { cacheActor, getCachedActor, getCachedActors, cacheDirector, getCachedDirector, getCachedDirectors, purgeStaleAniCache } from "./utils/actorCache.js";
 
@@ -34,17 +35,44 @@ export default function App() {
   return <MainApp />;
 }
 
+function getMovieRoute(pathname) {
+  const match = pathname.match(/^\/movie\/(?:[^\/]+-)?(\d+)\/?$/);
+  if (!match) return null;
+  return Number(match[1]);
+}
+
 function MainApp() {
   const [actors, setActors] = useState([]);
   const [sort, setSort] = useState("top");
   const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(null);
+  const [selectedMovieId, setSelectedMovieId] = useState(() => getMovieRoute(window.location.pathname));
   const [criteria, setCriteria] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [mode, setMode] = useState("Actors");
   const [directors, setDirectors] = useState([]);
   const [isDetailedScore, setIsDetailedScore] = useState(false);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const movieId = getMovieRoute(window.location.pathname);
+      setSelectedMovieId(movieId);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const openMovie = useCallback((id, title = "") => {
+    const slug = title ? `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${id}` : id;
+    window.history.pushState({}, "", `/movie/${slug}`);
+    setSelectedMovieId(id);
+  }, []);
+
+  const closeMovie = useCallback(() => {
+    window.history.pushState({}, "", "/");
+    setSelectedMovieId(null);
+  }, []);
 
   useEffect(() => {
     purgeStaleAniCache();
@@ -192,6 +220,7 @@ function MainApp() {
   const onPick = (it) => {
     if (it.type === "Actor") return openActor(it.id);
     if (it.type === "Director") return openDirector(it.id);
+    if (it.type === "Movie") return openMovie(it.id, it.name);
   };
 
   const shown = useMemo(() => {
@@ -240,7 +269,14 @@ function MainApp() {
         {!loading && shown.length === 0 && <p className="text-center text-slate-500">No {mode === "Directors" ? "directors" : "actors"} available. Try refreshing the page.</p>}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shown.map((a) => (
-            <ActorCard key={a.id} actor={a} mode={mode} isDetailed={isDetailedScore} onOpen={(item) => (mode === "Directors" ? openDirector(item.id, item) : openActor(item.id, item))} />
+            <ActorCard
+              key={a.id}
+              actor={a}
+              mode={mode}
+              isDetailed={isDetailedScore}
+              onOpen={(item) => (mode === "Directors" ? openDirector(item.id, item) : openActor(item.id, item))}
+              onOpenMovie={(movieId, title) => openMovie(movieId, title)}
+            />
           ))}
         </div>
       </main>
@@ -248,17 +284,39 @@ function MainApp() {
       <footer className="border-t border-line px-4 py-6">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 text-center">
           <button onClick={() => setCriteria(true)} className="text-sm text-slate-400 underline-offset-4 hover:text-white hover:underline">Criteria</button>
-          <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" aria-label="The Movie Database" className="inline-flex items-center gap-3">
-            <img src="/tmdb-short-blue.svg" alt="TMDb" className="h-8 w-auto" />
-          </a>
+          <div className="flex flex-wrap items-center justify-center gap-5">
+            <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" aria-label="The Movie Database">
+              <img src="/tmdb-short-blue.svg" alt="TMDb" className="h-10 sm:h-11 w-auto" />
+            </a>
+            <a href="https://www.imdb.com" target="_blank" rel="noreferrer" aria-label="IMDb">
+              <img src="/IMDB_Logo_2016.svg" alt="IMDb" className="h-9 sm:h-10 w-auto" />
+            </a>
+          </div>
           <p className="max-w-2xl text-xs text-slate-500">This product uses the TMDb API but is not endorsed or certified by TMDb.</p>
+          <p className="max-w-2xl text-xs text-slate-500">Ratings and vote data courtesy of IMDb (imdb.com). This site is not affiliated with, endorsed by, or sponsored by IMDb.com, Inc. or its affiliates.</p>
           <p className="text-xs text-slate-500">Awards data from Wikidata (CC0).</p>
         </div>
       </footer>
 
       {selected && (mode === "Directors"
-        ? <DirectorModal director={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} />
-        : <ActorModal actor={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} />)}
+        ? <DirectorModal director={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} onOpenMovie={(movieId, title) => openMovie(movieId, title)} />
+        : <ActorModal actor={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} onOpenMovie={(movieId, title) => openMovie(movieId, title)} />)}
+      {selectedMovieId && (
+        <MovieModal
+          movieId={selectedMovieId}
+          onClose={closeMovie}
+          onSelectPerson={({ id, type }) => {
+            closeMovie();
+            if (type === "Director") {
+              setMode("Directors");
+              openDirector(id);
+            } else {
+              setMode("Actors");
+              openActor(id);
+            }
+          }}
+        />
+      )}
       {criteria && <CriteriaModal mode={mode} onClose={() => setCriteria(false)} />}
       {comparisonOpen && <CompareView api={API} mode={mode} isDetailed={isDetailedScore} onClose={() => setComparisonOpen(false)} />}
     </div>

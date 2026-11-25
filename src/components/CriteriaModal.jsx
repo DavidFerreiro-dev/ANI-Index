@@ -3,7 +3,7 @@ import { X, Award, Film, DollarSign, MessageSquare, Compass, BookOpen, Layers } 
 import ScoreBadge from "./ScoreBadge.jsx";
 
 const FALLBACK = {
-  SCORING_VERSION: "22.0",
+  SCORING_VERSION: "24",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
   BAYESIAN: { C: 6.5, m: 200, shrinkageK: 3 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
@@ -52,21 +52,21 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
         <div className="mt-5 inline-flex max-w-full rounded-xl border border-line bg-card/60 p-1" role="tablist">
           <button role="tab" aria-selected={activeTab === "Actors"} onClick={() => setActiveTab("Actors")}
                   className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-bold transition ${activeTab === "Actors" ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>
-            ANI Index — Actors (v22.0)
+            ANI Index — Actors (v24)
           </button>
           <button role="tab" aria-selected={activeTab === "Directors"} onClick={() => setActiveTab("Directors")}
                   className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-bold transition ${activeTab === "Directors" ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>
-            ANI Index — Directors (v2.0)
+            ANI Index — Directors (v4)
           </button>
         </div>
 
         {activeTab === "Directors" ? (
           /* ========================================================================= */
-          /*                          DIRECTORS CRITERIA (v2.0)                         */
+          /*                           DIRECTORS CRITERIA (v4)                           */
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 2.0 synthesizes directing careers across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 4 synthesizes directing careers across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
             </div>
 
             {/* Pillar Breakdown Table */}
@@ -211,15 +211,15 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
               </ul>
             </div>
 
-            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">ANI Index — Directors v2.0</p>
+            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">ANI Index — Directors v4</p>
           </div>
         ) : (
           /* ========================================================================= */
-          /*                            ACTORS CRITERIA (v22.0)                         */
+          /*                              ACTORS CRITERIA (v24)                          */
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 22.0 evaluates acting careers across five pillars: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 24 evaluates acting careers across five pillars: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
             </div>
 
             {/* Pillar Breakdown Table */}

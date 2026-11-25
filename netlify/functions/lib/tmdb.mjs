@@ -84,3 +84,7 @@ export async function reviews(id) {
   try { return (await tmdbGet(`/movie/${id}/reviews`, { language: "en-US" }, 5000)).results || []; }
   catch { return []; }
 }
+export async function movieExternalIds(id) {
+  try { return tmdbGet(`/movie/${id}/external_ids`); }
+  catch { return {}; }
+}

@@ -223,10 +223,10 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
   const imdbScore = rawImdbRating ? Number(rawImdbRating).toFixed(1) : null;
   const imdbVotes = rawImdbVotes  ? Number(rawImdbVotes).toLocaleString() : null;
 
-  // Weighted Combined Score (55% IMDb / 45% TMDb)
+  // Weighted Combined Score (60% IMDb / 40% TMDb)
   let combinedScore = null;
   if (rawImdbRating && movie.vote_average) {
-    combinedScore = (0.55 * Number(rawImdbRating) + 0.45 * Number(movie.vote_average)).toFixed(1);
+    combinedScore = (0.6 * Number(rawImdbRating) + 0.4 * Number(movie.vote_average)).toFixed(1);
   } else if (movie.vote_average) {
     combinedScore = Number(movie.vote_average).toFixed(1);
   }
@@ -329,7 +329,7 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
                     ratingTab === "both" ? "bg-sky-500 text-black shadow" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  Ambos (55/45)
+                  Ambos (60/40)
                 </button>
                 <button
                   onClick={() => setRatingTab("imdb")}
@@ -356,7 +356,7 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
               {(ratingTab === "both" || ratingTab === "imdb") && combinedScore && (
                 <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-sky-300">Ponderada (55/45)</span>
+                    <span className="text-xs font-bold text-sky-300">Ponderada (60/40)</span>
                     <Sparkles size={14} className="text-sky-400" />
                   </div>
                   <div className="mt-2 flex items-baseline gap-2">

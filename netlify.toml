@@ -28,3 +28,10 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+# Keep the single-page app fallback after the API rules. Declaring it explicitly
+# prevents the Vite integration from injecting it before the function rewrites.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

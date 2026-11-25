@@ -1,5 +1,5 @@
 // Server-side / backend IMDb helper for Netlify Functions & scripts
-// Provides combined Bayesian calculation (55% IMDb / 45% TMDb) and dual reviews fetching.
+// Provides combined Bayesian calculation (60% IMDb / 40% TMDb) and dual reviews fetching.
 import { fetchImdbReviews } from "../imdb-reviews.mjs";
 
 const JSDELIVR_IMDB_URL = "https://cdn.jsdelivr.net/gh/DavidFerreiro-dev/ANI-Index@data/imdb-ratings.json";
@@ -32,12 +32,12 @@ export async function getBackendImdbRatings(timeoutMs = 5000) {
 }
 
 /**
- * Calculates combined Bayesian prior (55% IMDb / 45% TMDb)
+ * Calculates combined Bayesian prior (60% IMDb / 40% TMDb)
  * Formula:
  * Bayes_TMDb = (v_tmdb / (v_tmdb + 200)) * rating_tmdb + (200 / (v_tmdb + 200)) * 6.5
  * If IMDb exists:
  * Bayes_IMDb = (v_imdb / (v_imdb + 200)) * rating_imdb + (200 / (v_imdb + 200)) * 6.5
- * Bayes_Final = (0.55 * Bayes_IMDb) + (0.45 * Bayes_TMDb)
+ * Bayes_Final = (0.6 * Bayes_IMDb) + (0.4 * Bayes_TMDb)
  * Otherwise Bayes_Final = Bayes_TMDb
  */
 export function computeDualBayes(tmdbRating, tmdbVotes, imdbRating, imdbVotes) {
@@ -53,7 +53,7 @@ export function computeDualBayes(tmdbRating, tmdbVotes, imdbRating, imdbVotes) {
 
   if (rI > 0 && vI >= 10) {
     const bayesImdb = (vI / (vI + m)) * rI + (m / (vI + m)) * C;
-    return (0.55 * bayesImdb) + (0.45 * bayesTmdb);
+    return (0.6 * bayesImdb) + (0.4 * bayesTmdb);
   }
 
   return bayesTmdb;

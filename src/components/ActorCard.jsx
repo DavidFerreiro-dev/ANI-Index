@@ -1,6 +1,6 @@
 import ScoreBadge from "./ScoreBadge.jsx";
 
-export default function ActorCard({ actor, onOpen, mode = "Actors", isDetailed = false }) {
+export default function ActorCard({ actor, onOpen, onOpenMovie, mode = "Actors", isDetailed = false }) {
   const projects = actor.leads || [];
   const projectTitle = mode === "Directors" ? "Top directed films" : "Top lead projects";
   return (
@@ -19,9 +19,19 @@ export default function ActorCard({ actor, onOpen, mode = "Actors", isDetailed =
         <p className="mt-3 text-sm text-slate-400">{projectTitle}</p>
         <ul className="mt-1 space-y-1">
           {projects.slice(0, 3).map((m) => (
-            <li key={m.id} className="flex items-baseline justify-between gap-2 text-sm">
-              <span className="truncate text-left text-slate-200">{m.title}</span>
-              <span className="shrink-0 text-slate-400">{m.rating}</span>
+            <li key={m.id}>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenMovie?.(m.id, m.title);
+                }}
+                className="flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-sm transition hover:bg-coal hover:text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400/70"
+                title={`View ${m.title} cast and ratings`}
+              >
+                <span className="truncate text-slate-200">{m.title}</span>
+                <span className="shrink-0 text-slate-400">{m.rating}</span>
+              </button>
             </li>
           ))}
           {projects.length === 0 && <li className="text-sm text-slate-500">{mode === "Directors" ? "No directed films found" : "No lead roles found"}</li>}

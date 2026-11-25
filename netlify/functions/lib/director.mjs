@@ -260,7 +260,7 @@ export async function buildDirector(id) {
     profile: personData.profile_path || null,
     summary: (personData.biography || "").replace(/\u00a0/g, " ").normalize("NFKC").trim().slice(0, 320),
     score,
-    scoring_version: "Director Scoring version 2.0",
+    scoring_version: "Director Scoring version 4",
     mode: "Directors",
     pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) => [key, value])),
     valid_work_count: valid.length,

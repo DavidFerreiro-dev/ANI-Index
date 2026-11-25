@@ -1,5 +1,5 @@
 export const SCORING_CONFIG = {
-  SCORING_VERSION: "22.0",
+  SCORING_VERSION: "24",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
   BAYESIAN: { C: 6.5, m: 200, shrinkageK: 3 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },

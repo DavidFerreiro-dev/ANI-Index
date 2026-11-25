@@ -8,7 +8,7 @@ Actor & Director Merit Ranker is a serverless web application that evaluates and
 
 The **ANI Index (Artistic & Narrative Index)** is an algorithmic multi-pillar evaluation system designed to measure sustained artistic merit, peer recognition, narrative versatility, and cultural impact while neutralizing franchise inflation and volume bias.
 
-### 1. ANI Index — Actors v22.0
+### 1. ANI Index — Actors v24
 
 The actor model synthesizes five weighted pillars:
 
@@ -26,7 +26,7 @@ The actor model synthesizes five weighted pillars:
 - **Critical Sentiment (10%):** VADER polarity scores of TMDb user review sentences mentioning the actor or their characters, with cinema-specific terms (dark, brutal, haunting, etc.) neutralized.
 - **Genre Versatility (10%):** Counts distinct grouped genres across roles with billing order $\le 3$ and rating $\ge 6.5$.
 
-### 2. ANI Index — Directors v2.0
+### 2. ANI Index — Directors v4
 
 The director model evaluates five directing-specific pillars:
 
@@ -45,8 +45,8 @@ The director model evaluates five directing-specific pillars:
 ## Architecture
 
 - `src/` — React 18, Tailwind CSS, Lucide icons, responsive modals, and search components
-- `public/seed-actors.json` — Precomputed instant seed for 100 benchmark actors under `Actors v22.0`
-- `public/seed-directors.json` — Precomputed instant seed for 123 benchmark directors under `Directors v2.0`
+- `public/seed-actors.json` — Precomputed instant seed for 100 benchmark actors under `Actors v24`
+- `public/seed-directors.json` — Precomputed instant seed for 123 benchmark directors under `Directors v4`
 - `netlify/functions/` — Serverless functions:
   - `actors.mjs` — TMDb and Wikidata scoring pipeline for actors
   - `directors.mjs` — Directing career builder and scoring pipeline
