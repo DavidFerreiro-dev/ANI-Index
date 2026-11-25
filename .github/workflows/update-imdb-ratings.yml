@@ -1,0 +1,48 @@
+name: Update IMDb Ratings Dataset
+
+on:
+  schedule:
+    # Run daily at 05:00 UTC
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-imdb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download & build IMDb JSON
+        run: node scripts/build-imdb-json.mjs imdb-ratings.json
+
+      - name: Deploy to orphan 'data' branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Fetch remote data branch if exists
+          git fetch origin data:data || true
+          
+          # Check out orphan data branch
+          git checkout --orphan temp-data
+          git rm -rf . || true
+          
+          # Move generated ratings JSON into place
+          mv ../imdb-ratings.json ./imdb-ratings.json 2>/dev/null || mv imdb-ratings.json ./imdb-ratings.json || true
+          
+          # Add and commit
+          git add imdb-ratings.json
+          git commit -m "chore(data): update IMDb ratings dataset [skip ci]"
+          
+          # Force push to data branch
+          git push origin temp-data:data --force
+
