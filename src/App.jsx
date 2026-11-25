@@ -6,12 +6,8 @@ import ActorModal from "./components/ActorModal.jsx";
 import CriteriaModal from "./components/CriteriaModal.jsx";
 import CompareView from "./components/CompareView.jsx";
 import DirectorModal from "./components/DirectorModal.jsx";
-<<<<<<< HEAD
 import ActorEmbed from "./components/ActorEmbed.jsx";
-import { cacheActor, getCachedActor, getCachedActors, cacheDirector, getCachedDirector, getCachedDirectors } from "./utils/actorCache.js";
-=======
 import { cacheActor, getCachedActor, getCachedActors, cacheDirector, getCachedDirector, getCachedDirectors, purgeStaleAniCache } from "./utils/actorCache.js";
->>>>>>> 24592ef919d7ef624dbd0520bc1151bf8ee83a35
 
 const API = "";
 
@@ -20,17 +16,20 @@ function getEmbedRoute(pathname) {
   const view = parts[parts.length - 1];
   if (view !== "ani" && view !== "details") return null;
 
+  const isDirector = parts[0] === "directors";
   const actorParam = parts[parts.length - 2] || "";
   const match = actorParam.match(/(?:^|-)(\d+)$/);
   if (!match) return null;
 
-  return { id: Number(match[1]), view };
+  if (isDirector && parts.length !== 3) return null;
+  if (!isDirector && parts.length !== 2) return null;
+  return { id: Number(match[1]), view, entity: isDirector ? "director" : "actor" };
 }
 
 export default function App() {
   const route = getEmbedRoute(window.location.pathname);
   if (route) {
-    return <ActorEmbed id={route.id} view={route.view} compact={new URLSearchParams(window.location.search).get("compact") === "true"} />;
+    return <ActorEmbed id={route.id} view={route.view} entity={route.entity} compact={new URLSearchParams(window.location.search).get("compact") === "true"} />;
   }
   return <MainApp />;
 }

@@ -1,10 +1,12 @@
-import { X } from "lucide-react";
+import { Code2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import ScoreBadge from "./ScoreBadge.jsx";
 import { formatAniScore } from "../utils/aniScore.js";
+import EmbedDialog from "./EmbedDialog.jsx";
 
 export default function ActorModal({ actor, onClose, isDetailed = false }) {
   const [config, setConfig] = useState(null);
+  const [embedOpen, setEmbedOpen] = useState(false);
   useEffect(() => {
     fetch("/api/config").then((response) => response.ok ? response.json() : null).then(setConfig).catch(() => {});
   }, []);
@@ -59,6 +61,13 @@ export default function ActorModal({ actor, onClose, isDetailed = false }) {
             </div>
             <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-300">{actor.summary ? actor.summary + (actor.summary.length >= 320 ? "…" : "") : "No biography available."}</p>
           </div>
+        </div>
+
+        <div className="mt-5 flex justify-end">
+          <button type="button" onClick={() => setEmbedOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full border border-sky-400/50 bg-sky-400/10 px-4 py-2 text-sm font-bold text-sky-300 transition hover:bg-sky-400/20">
+            <Code2 size={16} /> Embed
+          </button>
         </div>
 
         <h3 className="mt-7 sm:mt-8 text-base sm:text-lg font-bold text-white">Score breakdown</h3>
@@ -165,6 +174,7 @@ export default function ActorModal({ actor, onClose, isDetailed = false }) {
           ))}
         </ul>
       </div>
+      {embedOpen && <EmbedDialog item={actor} entity="actor" onClose={() => setEmbedOpen(false)} />}
     </div>
   );
 }

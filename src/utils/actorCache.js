@@ -1,10 +1,6 @@
 const CACHE_PREFIX = "actor-merit-ranker:actor:";
 const DIRECTOR_CACHE_PREFIX = "actor-merit-ranker:director:";
-<<<<<<< HEAD
 const DYNAMIC_ACTORS_KEY = "ani_dynamic_seeds";
-export const SCORING_VERSION = "20.8";
-export const DIRECTOR_SCORING_VERSION = "Director Scoring version 1.1";
-=======
 export const SCORING_VERSION = "22.0";
 export const DIRECTOR_SCORING_VERSION = "Director Scoring version 2.0";
 export const ANI_ALGO_VERSION = "actors-v22.0_directors-v2.0";
@@ -16,14 +12,13 @@ export function purgeStaleAniCache() {
     if (storedVersion === ANI_ALGO_VERSION) return;
     for (let index = localStorage.length - 1; index >= 0; index--) {
       const key = localStorage.key(index);
-      if (key?.startsWith(CACHE_PREFIX) || key?.startsWith(DIRECTOR_CACHE_PREFIX)) {
+      if (key?.startsWith(CACHE_PREFIX) || key?.startsWith(DIRECTOR_CACHE_PREFIX) || key === DYNAMIC_ACTORS_KEY) {
         localStorage.removeItem(key);
       }
     }
     localStorage.setItem(ANI_ALGO_VERSION_KEY, ANI_ALGO_VERSION);
   } catch {}
 }
->>>>>>> 24592ef919d7ef624dbd0520bc1151bf8ee83a35
 
 export function isActorValid(actor) {
   if (!actor || typeof actor !== "object") return false;

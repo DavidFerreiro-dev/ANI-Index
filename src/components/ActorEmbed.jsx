@@ -3,26 +3,36 @@ import { Loader2 } from "lucide-react";
 import ScoreBadge from "./ScoreBadge.jsx";
 import {
   cacheActor,
+  cacheDirector,
   cacheDynamicActor,
   getCachedActor,
+  getCachedDirector,
   getDynamicCachedActor
 } from "../utils/actorCache.js";
 
-const PILLARS = [
+const ACTOR_PILLARS = [
   ["quality", "Filmography Quality", 40],
   ["awards", "Awards Prestige", 30],
   ["versatility", "Genre Versatility", 10],
   ["sentiment", "Critical Sentiment", 10],
   ["commercial", "Commercial Impact", 10]
 ];
+const DIRECTOR_PILLARS = [
+  ["quality", "Filmography Quality & Consistency", 40],
+  ["awards", "Awards & Festivals Prestige", 25],
+  ["commercial", "Commercial Impact", 15],
+  ["versatility", "Authorship & Versatility", 10],
+  ["legacy", "Cultural Legacy", 10]
+];
 
 function isScoredActor(actor) {
   return actor && actor.pillars && Number.isFinite(actor.score);
 }
 
-function actorProfileUrl(actor) {
+function actorProfileUrl(actor, entity) {
   const slug = actor.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return `https://ani-index.netlify.app/${slug}-${actor.id}/details`;
+  const prefix = entity === "director" ? "/directors" : "";
+  return `${window.location.origin}${prefix}/${slug}-${actor.id}/details`;
 }
 
 function Brand() {
@@ -34,7 +44,7 @@ function Brand() {
   );
 }
 
-function EmbedHeader({ actor, compact }) {
+function EmbedHeader({ actor, compact, profileUrl }) {
   return (
     <header className={`ani-embed-header${compact ? " is-compact" : ""}`}>
       {!compact && (
@@ -46,7 +56,7 @@ function EmbedHeader({ actor, compact }) {
       <Brand />
       <ScoreBadge score={actor.score} size={48} />
       {!compact && (
-        <a className="ani-embed-profile-link" href={actorProfileUrl(actor)} target="_blank" rel="noreferrer">
+        <a className="ani-embed-profile-link" href={profileUrl} target="_blank" rel="noreferrer">
           Full profile
         </a>
       )}
@@ -54,9 +64,11 @@ function EmbedHeader({ actor, compact }) {
   );
 }
 
-export default function ActorEmbed({ id, view, compact }) {
+export default function ActorEmbed({ id, view, entity = "actor", compact }) {
   const [actor, setActor] = useState(null);
   const [error, setError] = useState("");
+  const isDirector = entity === "director";
+  const pillars = isDirector ? DIRECTOR_PILLARS : ACTOR_PILLARS;
 
   useLayoutEffect(() => {
     document.documentElement.classList.add("embed-mode");
@@ -74,14 +86,16 @@ export default function ActorEmbed({ id, view, compact }) {
       setActor(null);
       setError("");
 
-      const cached = getDynamicCachedActor(id) || getCachedActor(id);
+      const cached = isDirector
+        ? getCachedDirector(id)
+        : getDynamicCachedActor(id) || getCachedActor(id);
       if (isScoredActor(cached)) {
         if (active) setActor(cached);
         return;
       }
 
       try {
-        const seedResponse = await fetch("/seed-actors.json");
+        const seedResponse = await fetch(isDirector ? "/seed-directors.json" : "/seed-actors.json");
         if (seedResponse.ok) {
           const seeds = await seedResponse.json();
           const seedActor = seeds.find((candidate) => Number(candidate.id) === id);
@@ -95,14 +109,17 @@ export default function ActorEmbed({ id, view, compact }) {
       }
 
       try {
-        const response = await fetch(`/api/actors/${id}`);
+        const response = await fetch(`/api/${isDirector ? "directors" : "actors"}/${id}`);
         const result = await response.json();
         if (!response.ok) {
           throw new Error(result.detail || result.message || result.error || `Request failed (${response.status})`);
         }
         if (!isScoredActor(result)) throw new Error("The actor response did not contain a valid score.");
-        cacheActor(result);
-        cacheDynamicActor(result);
+        if (isDirector) cacheDirector(result);
+        else {
+          cacheActor(result);
+          cacheDynamicActor(result);
+        }
         if (active) setActor(result);
       } catch (loadError) {
         if (active) setError(loadError.message || "Request failed");
@@ -111,7 +128,7 @@ export default function ActorEmbed({ id, view, compact }) {
 
     loadActor();
     return () => { active = false; };
-  }, [id]);
+  }, [id, isDirector]);
 
   useEffect(() => {
     const sendHeight = () => {
@@ -145,23 +162,25 @@ export default function ActorEmbed({ id, view, compact }) {
       {error && (
         <div className="ani-embed-error" role="alert">
           <strong>ANI Index unavailable</strong>
-          <span>Could not calculate the index for TMDb actor {id}.</span>
+          <span>Could not calculate the index for TMDb {isDirector ? "director" : "actor"} {id}.</span>
           <small>{error}</small>
         </div>
       )}
       {actor && (
         <>
-          <EmbedHeader actor={actor} compact={compact && view === "ani"} />
+          <EmbedHeader actor={actor} compact={compact && view === "ani"} profileUrl={actorProfileUrl(actor, entity)} />
           {view === "details" && (
             <section className="ani-embed-breakdown" aria-label="Score breakdown">
               <h2>Score breakdown</h2>
               <p className="ani-embed-metrics">
-                {actor.valid_work_count ?? 0} valid works
-                {" · "}{actor.lead_movie_count ?? 0} lead movies
+                {actor.valid_work_count ?? 0} {isDirector ? "valid feature films" : "valid works"}
+                {isDirector
+                  ? ` · ${actor.written_movie_count ?? 0} written/co-written`
+                  : ` · ${actor.lead_movie_count ?? 0} lead movies`}
                 {" · "}{actor.award_count ?? 0} counted awards
               </p>
               <div className="ani-embed-pillars">
-                {PILLARS.map(([key, label, weight]) => {
+                {pillars.map(([key, label, weight]) => {
                   const value = actor.pillars[key];
                   return (
                     <div className="ani-embed-pillar" key={key}>
@@ -176,7 +195,7 @@ export default function ActorEmbed({ id, view, compact }) {
                   );
                 })}
               </div>
-              <a className="ani-embed-profile-link" href={actorProfileUrl(actor)} target="_blank" rel="noreferrer">
+              <a className="ani-embed-profile-link" href={actorProfileUrl(actor, entity)} target="_blank" rel="noreferrer">
                 Open full profile
               </a>
             </section>

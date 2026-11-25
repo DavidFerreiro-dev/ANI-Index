@@ -55,9 +55,9 @@ The director model evaluates five directing-specific pillars:
 - `netlify/functions/lib/director.mjs` — Director evaluation formulas and pipeline
 - `netlify/functions/lib/scoring-config.mjs` — Centralized weights, curve parameters, and thresholds
 
-### Embeddable actor views
+### Embeddable actor and director views
 
-The direct routes `/{tmdb-id}/ani` and `/{slug}-{tmdb-id}/ani` render a compact score badge. Add `?compact=true` to hide the actor photo and name. The matching `/details` routes show the score breakdown. Actors not present in the static seed are calculated through the existing actor API and cached in the browser. Embed pages post an `ani-embed-resize` message to their parent window with the rendered height and TMDb ID.
+Open an actor or director profile and select **Embed** to copy an iframe snippet for its score badge or full breakdown. Actor routes use `/{slug}-{tmdb-id}/ani` and `/{slug}-{tmdb-id}/details`; director routes use `/directors/{slug}-{tmdb-id}/ani` and `/directors/{slug}-{tmdb-id}/details`. Add `?compact=true` to an `/ani` route to hide the photo and name. Embed pages post an `ani-embed-resize` message to their parent window with the rendered height and TMDb ID; the copied snippet listens for this message to resize its iframe.
 
 ---
 
