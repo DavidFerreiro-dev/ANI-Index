@@ -1,5 +1,6 @@
 const CACHE_PREFIX = "actor-merit-ranker:actor:";
 const DIRECTOR_CACHE_PREFIX = "actor-merit-ranker:director:";
+const DYNAMIC_ACTORS_KEY = "ani_dynamic_seeds";
 export const SCORING_VERSION = "20.8";
 export const DIRECTOR_SCORING_VERSION = "Director Scoring version 1.1";
 
@@ -60,6 +61,26 @@ export function cacheActor(actor) {
   if (actor.awards_status === "unavailable") return;
   try {
     localStorage.setItem(CACHE_PREFIX + actor.id, JSON.stringify(actor));
+  } catch {}
+}
+
+export function getDynamicCachedActor(id) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(DYNAMIC_ACTORS_KEY) || "{}");
+    const actor = stored[String(id)];
+    if (!isActorValid(actor) || !Number.isFinite(actor.score) || !actor.pillars) return null;
+    return actor;
+  } catch {
+    return null;
+  }
+}
+
+export function cacheDynamicActor(actor) {
+  if (!actor?.id || !isActorValid(actor) || !Number.isFinite(actor.score) || !actor.pillars) return;
+  try {
+    const stored = JSON.parse(localStorage.getItem(DYNAMIC_ACTORS_KEY) || "{}");
+    stored[String(actor.id)] = actor;
+    localStorage.setItem(DYNAMIC_ACTORS_KEY, JSON.stringify(stored));
   } catch {}
 }
 

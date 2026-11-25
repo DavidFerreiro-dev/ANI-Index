@@ -17,8 +17,9 @@ export const handler = async (event) => {
 
     return { statusCode: 200, headers: headers(), body: "[]" };
   } catch (err) {
+    const statusCode = /TMDb request failed: 404/.test(err.message) ? 404 : 500;
     return {
-      statusCode: 500,
+      statusCode,
       headers: headers(),
       body: JSON.stringify({ error: err.message, message: err.message, detail: err.message })
     };

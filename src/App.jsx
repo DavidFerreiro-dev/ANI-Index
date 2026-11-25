@@ -6,11 +6,32 @@ import ActorModal from "./components/ActorModal.jsx";
 import CriteriaModal from "./components/CriteriaModal.jsx";
 import CompareView from "./components/CompareView.jsx";
 import DirectorModal from "./components/DirectorModal.jsx";
+import ActorEmbed from "./components/ActorEmbed.jsx";
 import { cacheActor, getCachedActor, getCachedActors, cacheDirector, getCachedDirector, getCachedDirectors } from "./utils/actorCache.js";
 
 const API = "";
 
+function getEmbedRoute(pathname) {
+  const parts = pathname.split("/").filter(Boolean);
+  const view = parts[parts.length - 1];
+  if (view !== "ani" && view !== "details") return null;
+
+  const actorParam = parts[parts.length - 2] || "";
+  const match = actorParam.match(/(?:^|-)(\d+)$/);
+  if (!match) return null;
+
+  return { id: Number(match[1]), view };
+}
+
 export default function App() {
+  const route = getEmbedRoute(window.location.pathname);
+  if (route) {
+    return <ActorEmbed id={route.id} view={route.view} compact={new URLSearchParams(window.location.search).get("compact") === "true"} />;
+  }
+  return <MainApp />;
+}
+
+function MainApp() {
   const [actors, setActors] = useState([]);
   const [sort, setSort] = useState("top");
   const [loading, setLoading] = useState("");
