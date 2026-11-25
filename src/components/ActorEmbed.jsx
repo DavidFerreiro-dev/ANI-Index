@@ -110,6 +110,9 @@ export default function ActorEmbed({ id, view, entity = "actor", compact }) {
 
       try {
         const response = await fetch(`/api/${isDirector ? "directors" : "actors"}/${id}`);
+        if (!response.headers.get("content-type")?.includes("application/json")) {
+          throw new Error("The scoring API did not return JSON. Check the Netlify API redirects.");
+        }
         const result = await response.json();
         if (!response.ok) {
           throw new Error(result.detail || result.message || result.error || `Request failed (${response.status})`);

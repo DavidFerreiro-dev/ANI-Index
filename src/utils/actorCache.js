@@ -63,7 +63,9 @@ export function getCachedActors() {
       const actor = getCachedActor(key.slice(CACHE_PREFIX.length));
       if (actor) actors.push(actor);
     }
-    return actors;
+    const merged = new Map(actors.map((actor) => [actor.id, actor]));
+    for (const actor of getDynamicCachedActors()) merged.set(actor.id, actor);
+    return [...merged.values()];
   } catch {
     return [];
   }
@@ -85,6 +87,17 @@ export function getDynamicCachedActor(id) {
     return actor;
   } catch {
     return null;
+  }
+}
+
+export function getDynamicCachedActors() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(DYNAMIC_ACTORS_KEY) || "{}");
+    return Object.values(stored).filter((actor) =>
+      isActorValid(actor) && Number.isFinite(actor.score) && actor.pillars
+    );
+  } catch {
+    return [];
   }
 }
 
