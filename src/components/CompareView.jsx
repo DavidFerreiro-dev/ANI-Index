@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Search, X, Columns2 } from "lucide-react";
 import ScoreBadge from "./ScoreBadge.jsx";
 import { cacheActor, getCachedActor, cacheDirector, getCachedDirector } from "../utils/actorCache.js";
+import { formatAniScore } from "../utils/aniScore.js";
 
 const PILLARS = [
   ["quality", "Filmography Quality"],
@@ -93,7 +94,7 @@ function ActorSearch({ api, side, actor, onSelect, onClear, mode }) {
   );
 }
 
-function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight, mode }) {
+function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight, mode, isDetailed }) {
   const pillars = mode === "Directors" ? DIRECTOR_PILLARS : PILLARS;
   return (
     <section className="min-w-0 border-line lg:border-r lg:last:border-r-0">
@@ -119,7 +120,7 @@ function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight, 
               ? `${actor.valid_work_count ?? "Unknown"} valid feature films · ${actor.written_movie_count ?? 0} written/co-written · ${actor.award_count ?? 0} counted awards`
               : `${actor.valid_work_count ?? "Unknown"} valid works · ${actor.award_count ?? 0} counted acting awards${actor.lead_movie_count != null ? ` · ${actor.lead_movie_count} lead movies` : ""}`}
           </p>
-          <div className="mt-3 flex justify-center"><ScoreBadge score={actor.score} size={72} /></div>
+          <div className="mt-3 flex justify-center"><ScoreBadge score={actor.score} size={72} isDetailed={isDetailed} /></div>
 
           <div className="mt-6 space-y-4">
             {pillars.map(([key, label]) => {
@@ -133,7 +134,7 @@ function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight, 
                     <span className="font-bold">
                       {value == null
                         ? key === "sentiment" ? "Not enough review data" : "Not enough box office data"
-                        : value}
+                        : formatAniScore(value, isDetailed)}
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-card">
@@ -174,7 +175,7 @@ function ActorColumn({ api, side, actor, loading, onSelect, onClear, highlight, 
   );
 }
 
-export default function CompareView({ api, onClose, initialActors = [], mode = "Actors" }) {
+export default function CompareView({ api, onClose, initialActors = [], mode = "Actors", isDetailed = false }) {
   const [left, setLeft] = useState(initialActors[0] || null);
   const [right, setRight] = useState(initialActors[1] || null);
   const [leftLoading, setLeftLoading] = useState(false);
@@ -221,9 +222,9 @@ export default function CompareView({ api, onClose, initialActors = [], mode = "
         </button>
       </header>
       <main className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
-        <ActorColumn api={api} side={mode === "Directors" ? "Director A" : "Actor A"} actor={left} loading={leftLoading} mode={mode}
+        <ActorColumn api={api} side={mode === "Directors" ? "Director A" : "Actor A"} actor={left} loading={leftLoading} mode={mode} isDetailed={isDetailed}
                      onSelect={(item) => loadActor(item, "left")} onClear={() => setLeft(null)} highlight={highlight} />
-        <ActorColumn api={api} side={mode === "Directors" ? "Director B" : "Actor B"} actor={right} loading={rightLoading} mode={mode}
+        <ActorColumn api={api} side={mode === "Directors" ? "Director B" : "Actor B"} actor={right} loading={rightLoading} mode={mode} isDetailed={isDetailed}
                      onSelect={(item) => loadActor(item, "right")} onClear={() => setRight(null)} highlight={highlight} />
       </main>
     </div>

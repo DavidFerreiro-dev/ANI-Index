@@ -13,15 +13,32 @@ export async function tmdbGet(path, params = {}, timeoutMs = 8000) {
     url.searchParams.set("api_key", key);
   }
   for (const [name, value] of Object.entries(params)) url.searchParams.set(name, String(value));
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { headers, signal: controller.signal });
-    if (!response.ok) throw new Error(`TMDb request failed: ${response.status}`);
-    return await response.json();
-  } finally {
-    clearTimeout(timer);
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { headers, signal: controller.signal });
+      if (!response.ok) {
+        if (response.status === 404 || attempt === 3) {
+          throw new Error(`TMDb request failed: ${response.status}`);
+        }
+        if (response.status !== 429 && response.status < 500) {
+          throw new Error(`TMDb request failed: ${response.status}`);
+        }
+      } else {
+        return await response.json();
+      }
+    } catch (error) {
+      if (
+        error.message?.startsWith("TMDb request failed:")
+      ) throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
   }
+  throw new Error("TMDb request failed after retries");
 }
 
 export async function searchPerson(q) {

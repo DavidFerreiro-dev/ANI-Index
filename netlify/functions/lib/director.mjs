@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { person, personCrewCredits, externalIds, movieDetails, movieCrew } from "./tmdb.mjs";
 import { fetchAwards } from "./wikidata.mjs";
 
@@ -19,7 +20,7 @@ const genreGroups = [
 
 export function curatedDirectorIds() {
   try {
-    const file = path.resolve(process.cwd(), "directors.json");
+    const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../directors.json");
     return JSON.parse(fs.readFileSync(file, "utf8"))
       .filter((director) => director.tmdb_id)
       .map((director) => ({ id: director.tmdb_id, name: director.name }));
@@ -146,17 +147,17 @@ export async function buildDirector(id) {
   }
   genEligible.sort((a, b) => b.bayesian - a.bayesian);
 
-  // 3. Consistencia justa para carreras largas: Top 70% de sus largometrajes válidos (mínimo 3)
-  const consistencyCount = Math.max(3, Math.ceil(genEligible.length * 0.70));
+  // Consistency: smooth 6–12 feature sliding window, with franchise capping already applied.
+  const consistencyCount = Math.max(6, Math.min(12, Math.round(6 + ((genEligible.length - 6) / 24) * 6)));
   const consistencyMovies = genEligible.slice(0, consistencyCount);
   const consistency = consistencyMovies.length
     ? consistencyMovies.reduce((sum, movie) => sum + movie.bayesian, 0) / consistencyMovies.length
     : 0;
 
-  // 4. Conversión ajustada (divisor 2.35) para que las notas máximas ronden 93-95
+  // 70/30 peak/consistency conversion, capped for very large career filmographies.
   const peakNormalized = clamp(((peakScore - 6.0) / 2.35) * 100);
   const consistencyNormalized = clamp(((consistency - 6.0) / 2.35) * 100);
-  const quality = clamp((0.60 * peakNormalized) + (0.40 * consistencyNormalized));
+  const quality = clamp((0.70 * peakNormalized) + (0.30 * consistencyNormalized));
 
   const commercial = valid
     .filter((movie) => Number(movie.revenue) > 0)
@@ -210,8 +211,15 @@ export async function buildDirector(id) {
     .slice(0, 5);
   const legacyScores = topLegacy.map((movie) => {
     const count = Number(movie.vote_count) || 0;
-    if (count <= 1000) return clamp((Math.log10(Math.max(count, 10)) / 3) * 85);
-    return clamp(85 + ((Math.log10(count) - 3) / 3) * 15);
+    let legacyScore = count <= 1000
+      ? clamp((Math.log10(Math.max(count, 10)) / 3) * 85)
+      : clamp(85 + ((Math.log10(count) - 3) / 3) * 15);
+    const year = Number(String(movie.release_date || "").slice(0, 4));
+    if (count >= 100000 && year > 0 && year < 1990) {
+      const eraFactor = 1.08 + (Math.max(0, 1990 - year) / 100) * 0.40;
+      legacyScore = clamp(legacyScore * Math.min(1.12, eraFactor));
+    }
+    return legacyScore;
   });
   const legacy = legacyScores.length
     ? legacyScores.reduce((sum, score) => sum + score, 0) / legacyScores.length
@@ -238,19 +246,23 @@ export async function buildDirector(id) {
   const baseScore = baseWeightTotal
     ? baseAvailable.reduce((sum, key) => sum + pillars[key] * baseWeights[key] / baseWeightTotal, 0)
     : 0;
-  const score = awardsValue >= baseScore
+  let score = awardsValue >= baseScore
     ? clamp((0.75 * baseScore) + (0.25 * awardsValue))
     : clamp((0.95 * baseScore) + (0.05 * awardsValue));
+  if (score > 88) {
+    const r = (score - 88) / 12;
+    score = clamp(88 + (7.5 * (Math.log1p(1.5 * r) / Math.log(2.5))));
+  }
 
   return {
     id: personData.id,
     name: personData.name,
     profile: personData.profile_path || null,
     summary: (personData.biography || "").replace(/\u00a0/g, " ").normalize("NFKC").trim().slice(0, 320),
-    score: Math.round(score),
-    scoring_version: "Director Scoring version 1.1",
+    score,
+    scoring_version: "Director Scoring version 2.0",
     mode: "Directors",
-    pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) => [key, Math.round(value)])),
+    pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) => [key, value])),
     valid_work_count: valid.length,
     written_movie_count: writtenCount,
     award_count: notable.filter((award) => award.won > 0).length,

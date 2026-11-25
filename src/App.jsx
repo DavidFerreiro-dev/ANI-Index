@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, X, Columns2 } from "lucide-react";
+import { Loader2, X, Columns2, Hash } from "lucide-react";
 import SearchBar from "./components/SearchBar.jsx";
 import ActorCard from "./components/ActorCard.jsx";
 import ActorModal from "./components/ActorModal.jsx";
 import CriteriaModal from "./components/CriteriaModal.jsx";
 import CompareView from "./components/CompareView.jsx";
 import DirectorModal from "./components/DirectorModal.jsx";
+<<<<<<< HEAD
 import ActorEmbed from "./components/ActorEmbed.jsx";
 import { cacheActor, getCachedActor, getCachedActors, cacheDirector, getCachedDirector, getCachedDirectors } from "./utils/actorCache.js";
+=======
+import { cacheActor, getCachedActor, getCachedActors, cacheDirector, getCachedDirector, getCachedDirectors, purgeStaleAniCache } from "./utils/actorCache.js";
+>>>>>>> 24592ef919d7ef624dbd0520bc1151bf8ee83a35
 
 const API = "";
 
@@ -41,6 +45,11 @@ function MainApp() {
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [mode, setMode] = useState("Actors");
   const [directors, setDirectors] = useState([]);
+  const [isDetailedScore, setIsDetailedScore] = useState(false);
+
+  useEffect(() => {
+    purgeStaleAniCache();
+  }, []);
 
   const loadActors = useCallback(async () => {
     const cached = getCachedActors();
@@ -211,11 +220,18 @@ function MainApp() {
             <Columns2 size={18} /> Compare
           </button>
         </div>
-        <div className="mt-5 sm:mt-6 inline-flex max-w-full rounded-full border border-line bg-card p-1 shadow-inner" role="tablist">
-          {[["top", "Top Rated"], ["az", "A–Z"]].map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={sort === k} onClick={() => setSort(k)}
-                    className={`rounded-full px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold transition ${sort === k ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>{l}</button>
-          ))}
+        <div className="mt-5 sm:mt-6 flex flex-wrap items-center justify-center gap-2">
+          <div className="inline-flex max-w-full rounded-full border border-line bg-card p-1 shadow-inner" role="tablist">
+            {[["top", "Top Rated"], ["az", "A–Z"]].map(([k, l]) => (
+              <button key={k} role="tab" aria-selected={sort === k} onClick={() => setSort(k)}
+                      className={`rounded-full px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold transition ${sort === k ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>{l}</button>
+            ))}
+          </div>
+          <button type="button" role="switch" aria-checked={isDetailedScore}
+                  onClick={() => setIsDetailedScore((value) => !value)}
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs sm:text-sm font-bold transition ${isDetailedScore ? "border-sky-400 bg-sky-400/15 text-sky-300" : "border-line bg-slate-900 text-slate-300 hover:text-white"}`}>
+            <Hash size={16} /> Detailed Score
+          </button>
         </div>
       </header>
 
@@ -225,7 +241,7 @@ function MainApp() {
         {!loading && shown.length === 0 && <p className="text-center text-slate-500">No {mode === "Directors" ? "directors" : "actors"} available. Try refreshing the page.</p>}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shown.map((a) => (
-            <ActorCard key={a.id} actor={a} mode={mode} onOpen={(item) => (mode === "Directors" ? openDirector(item.id, item) : openActor(item.id, item))} />
+            <ActorCard key={a.id} actor={a} mode={mode} isDetailed={isDetailedScore} onOpen={(item) => (mode === "Directors" ? openDirector(item.id, item) : openActor(item.id, item))} />
           ))}
         </div>
       </main>
@@ -242,10 +258,10 @@ function MainApp() {
       </footer>
 
       {selected && (mode === "Directors"
-        ? <DirectorModal director={selected} onClose={() => setSelected(null)} />
-        : <ActorModal actor={selected} onClose={() => setSelected(null)} />)}
+        ? <DirectorModal director={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} />
+        : <ActorModal actor={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} />)}
       {criteria && <CriteriaModal mode={mode} onClose={() => setCriteria(false)} />}
-      {comparisonOpen && <CompareView api={API} mode={mode} onClose={() => setComparisonOpen(false)} />}
+      {comparisonOpen && <CompareView api={API} mode={mode} isDetailed={isDetailedScore} onClose={() => setComparisonOpen(false)} />}
     </div>
   );
 }

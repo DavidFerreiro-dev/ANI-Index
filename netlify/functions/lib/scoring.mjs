@@ -457,9 +457,18 @@ export function commercialImpact(commercialMovies = []) {
     const budget = Number(movie.budget);
     let movieScore = grossScore;
     if (Number.isFinite(budget) && budget > 0) {
-      const roi = revenue / budget;
-      const roiScore = clamp((Math.log10(roi) / Math.log10(10)) * 100);
-      movieScore = clamp((0.80 * grossScore) + (0.20 * roiScore));
+      const rawRoi = revenue / budget;
+      const roi = Math.max(Cfg.COMMERCIAL_ROI_FLOOR, Math.min(Cfg.COMMERCIAL_ROI_CAP, rawRoi));
+      const roiScore = clamp(((Math.log10(roi) - Math.log10(Cfg.COMMERCIAL_ROI_FLOOR)) /
+        (Math.log10(Cfg.COMMERCIAL_ROI_CAP) - Math.log10(Cfg.COMMERCIAL_ROI_FLOOR))) * 100);
+      const year = Number(String(movie.release_date || "").slice(0, 4));
+      const decadeFactor = year < 1980 ? 1.08 : year < 1990 ? 1.06 : year < 2000 ? 1.03 :
+        year < 2010 ? 1.00 : year < 2020 ? 0.97 : 0.95;
+      const decadeAdjustedGross = clamp(grossScore * decadeFactor);
+      movieScore = clamp(
+        (Cfg.COMMERCIAL_GROSS_WEIGHT * decadeAdjustedGross) +
+        (Cfg.COMMERCIAL_ROI_WEIGHT * roiScore)
+      );
     }
     counted.push({ ...movie, score: movieScore });
   }
@@ -534,7 +543,12 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
   const awardsValueAvailable = pillars.awards ?? 0;
   let score = awardsValueAvailable >= baseScore
     ? (0.70 * baseScore) + (0.30 * awardsValueAvailable)
-    : (0.85 * baseScore) + (0.15 * awardsValueAvailable);
+    : (() => {
+        const excess = Math.max(0, baseScore - awardsValueAvailable - Cfg.AWARD_BRAKE_THRESHOLD);
+        const brakeStrength = Cfg.AWARD_BRAKE_MAX_WEIGHT *
+          Math.min(1, excess / Cfg.AWARD_BRAKE_MAX_EXCESS);
+        return ((1 - brakeStrength) * baseScore) + (brakeStrength * awardsValueAvailable);
+      })();
   const missingBasePillars = baseKeys.length - baseAvailable.length;
   if (missingBasePillars >= 1 && missingBasePillars <= 2)
     score = Math.min(score, Cfg.SENTIMENT.missingPillarCap);
@@ -554,10 +568,10 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
     name: person.name,
     profile: person.profile_path || null,
     summary: cleanSummary,
-    score: Math.round(score),
+    score,
     scoring_version: Cfg.SCORING_VERSION,
     pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) =>
-      [key, value === null ? null : Math.round(value)])),
+      [key, value === null ? null : value])),
     awards: notable,
     award_count: awardCount,
     ignored_awards: ignoredAwards,

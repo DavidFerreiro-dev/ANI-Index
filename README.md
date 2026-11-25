@@ -8,7 +8,7 @@ Actor & Director Merit Ranker is a serverless web application that evaluates and
 
 The **ANI Index (Artistic & Narrative Index)** is an algorithmic multi-pillar evaluation system designed to measure sustained artistic merit, peer recognition, narrative versatility, and cultural impact while neutralizing franchise inflation and volume bias.
 
-### 1. ANI Index — Actors v20.8
+### 1. ANI Index — Actors v22.0
 
 The actor model synthesizes five weighted pillars:
 
@@ -21,31 +21,32 @@ The actor model synthesizes five weighted pillars:
   - **Tier A:** Golden Globes, SAG, Critics Choice, and major industry guilds.
   - **Tier B / Genre:** Saturn Awards, Sitges, Satellite, and critics associations (subject to decay on repeat honors and capped at a maximum contribution of 15 points).
   - **Micro-score:** Other/regional honors receive +0.5 points each up to a strict cap of 10 points.
-  - **Asymmetric continuous brake:** When Awards Prestige is lower than the Base Score ($A < B$), the final score dampens commercial/volume inflation: $\text{Overall} = 0.85 \times \text{Base} + 0.15 \times \text{Awards}$.
-- **Commercial Impact (10%):** Top 5 post-1980 commercial projects combining logarithmic gross (80%) and revenue-to-budget ROI (20%), capped at 1 movie per collection. Standalone films without box office data in pre-1980 eras receive a conservative 65.
+  - **Threshold-gated asymmetric brake:** When the Base-to-Awards gap exceeds 18 points, the penalty scales smoothly up to a 15% brake. Gaps of 18 points or less use the awards-elevated or otherwise normal structural blend.
+- **Commercial Impact (10%):** Top 5 post-1980 commercial projects combine decade-adjusted logarithmic gross (90%) with capped ROI (10%). ROI is clamped between 0.5× and 10× to suppress noisy low-budget outliers.
 - **Critical Sentiment (10%):** VADER polarity scores of TMDb user review sentences mentioning the actor or their characters, with cinema-specific terms (dark, brutal, haunting, etc.) neutralized.
 - **Genre Versatility (10%):** Counts distinct grouped genres across roles with billing order $\le 3$ and rating $\ge 6.5$.
 
-### 2. ANI Index — Directors v1.1
+### 2. ANI Index — Directors v2.0
 
 The director model evaluates five directing-specific pillars:
 
 - **Filmography Quality & Consistency (40%):**
-  - **Peak (60%):** Bayesian average of the director's Top 4 valid features, capped at a maximum of 1 film per franchise.
-  - **Consistency (40%):** Bayesian average of the Top 70% of their valid feature filmography ($\lceil N \times 0.70 \rceil$, min 3), capped at a maximum of 2 films per franchise.
+  - **Peak (70%):** Bayesian average of the director's Top 4 valid features, capped at a maximum of 1 film per franchise.
+  - **Consistency (30%):** Bayesian average of a capped 6–12 film sliding window, scaled with career length and capped at 2 films per franchise.
+  - Scores above 88 use a logarithmic upper-end compression, keeping elite careers in a finely differentiated 92–95.5 range.
   - Calibrated with a divisor of 2.35 to align top historical career peaks in the 93–95 range.
 - **Awards & Festivals Prestige (25%):** Best Director, Best Picture, and Screenplay honors across Tier S (Oscars, Cannes Palme d'Or, Venice Golden Lion, Berlin Golden Bear), Tier A (BAFTA, DGA, Golden Globes, César, Goya, major festival direction prizes), and Tier B (Spirit, Gotham, critics associations).
 - **Commercial Impact (15%):** Top 3 commercial features combining logarithmic gross (70%) and ROI (30%), with 1 franchise entry maximum and a 1.10× bonus for standalone original films.
 - **Authorship & Versatility (10%):** 75% Genre Versatility (grouped genre coverage at rating $\ge 6.5$) + 25% Authorship Index (percentage of features where the director is credited for Writer, Screenplay, or Story).
-- **Cultural Legacy (10%):** Logarithmic TMDb vote count distribution across the Top 5 most-voted features.
+- **Cultural Legacy (10%):** Logarithmic TMDb vote count distribution across the Top 5 most-voted features, with a subtle era multiplier of up to 1.12× for pre-1990 classics with at least 100,000 votes.
 
 ---
 
 ## Architecture
 
 - `src/` — React 18, Tailwind CSS, Lucide icons, responsive modals, and search components
-- `public/seed-actors.json` — Precomputed instant seed for 100 benchmark actors under `Actors v20.8`
-- `public/seed-directors.json` — Precomputed instant seed for 123 benchmark directors under `Directors v1.1`
+- `public/seed-actors.json` — Precomputed instant seed for 100 benchmark actors under `Actors v22.0`
+- `public/seed-directors.json` — Precomputed instant seed for 123 benchmark directors under `Directors v2.0`
 - `netlify/functions/` — Serverless functions:
   - `actors.mjs` — TMDb and Wikidata scoring pipeline for actors
   - `directors.mjs` — Directing career builder and scoring pipeline

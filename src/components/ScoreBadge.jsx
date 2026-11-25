@@ -1,10 +1,14 @@
-export default function ScoreBadge({ score, size = 56 }) {
-  const s = Math.round(score);
-  const label = { width: size, height: size, fontSize: size * 0.4 };
+import { formatAniScore } from "../utils/aniScore.js";
+
+export default function ScoreBadge({ score, size = 56, isDetailed = false }) {
+  const s = Math.round(Number(score));
+  const formattedScore = formatAniScore(score, isDetailed);
+  const badgeLabel = { width: size, height: size, fontSize: size * 0.4 };
+  const textSize = isDetailed ? size * 0.26 : size * 0.32;
 
   if (s >= 90) {
     return (
-      <div className="relative grid place-items-center" style={{ width: size * 1.1, height: size * 1.1 }} aria-label={`Score ${s}, Diamond`}>
+      <div className="relative grid place-items-center" style={{ width: size * 1.1, height: size * 1.1 }} aria-label={`Score ${formattedScore}, Diamond`}>
         <svg viewBox="0 0 100 100" className="gem absolute inset-0 h-full w-full">
           <defs>
             <clipPath id="gemclip"><polygon points="50,2 96,34 50,98 4,34" /></clipPath>
@@ -21,7 +25,7 @@ export default function ScoreBadge({ score, size = 56 }) {
           </g>
           <polygon points="50,2 96,34 50,98 4,34" fill="none" stroke="#E0F2FE" strokeWidth="2" />
         </svg>
-        <span className="relative font-extrabold text-sky-950" style={{ fontSize: size * 0.32, marginTop: size * 0.06 }}>{s}</span>
+        <span className="relative font-extrabold text-sky-950" style={{ fontSize: textSize, marginTop: size * 0.06 }}>{formattedScore}</span>
       </div>
     );
   }
@@ -33,8 +37,8 @@ export default function ScoreBadge({ score, size = 56 }) {
 
   return (
     <div className="grid place-items-center rounded-full font-extrabold shadow-lg ring-1 ring-black/30"
-         style={{ ...label, background: bg, color }} aria-label={`Score ${s}`}>
-      {s}
+         style={{ ...badgeLabel, fontSize: textSize, background: bg, color }} aria-label={`Score ${formattedScore}`}>
+      {formattedScore}
     </div>
   );
 }
