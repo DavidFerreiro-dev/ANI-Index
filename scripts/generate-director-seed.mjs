@@ -92,13 +92,15 @@ const built = await mapWithConcurrency(directors, CONCURRENCY, async (director) 
     if (valid) successful++;
     else failed++;
     drawProgress(completed, directors.length, successful, failed, startTime);
-    return valid || existingById.get(director.id) || null;
+    const previous = existingById.get(director.id);
+    return valid || (previous?.scoring_version === "Director Scoring version 5.2" ? previous : null);
   } catch (error) {
     completed++;
     failed++;
     console.error(`\n[ERROR] ${director.name}: ${error.message}`);
     drawProgress(completed, directors.length, successful, failed, startTime);
-    return existingById.get(director.id) || null;
+    const previous = existingById.get(director.id);
+    return previous?.scoring_version === "Director Scoring version 5.2" ? previous : null;
   }
 });
 

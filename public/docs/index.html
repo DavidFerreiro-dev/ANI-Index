@@ -548,14 +548,14 @@
         <table>
           <thead><tr><th>Faceta</th><th>Prefijo / Clave de Caché</th><th>Endpoint Serverless</th><th>Versión Activa</th></tr></thead>
           <tbody>
-            <tr><td><strong>Actors</strong></td><td><code>actor-merit-ranker:actor:{id}</code></td><td><code>/api/actors/{id}</code></td><td><code>26.4</code></td></tr>
-            <tr><td><strong>Directors</strong></td><td><code>actor-merit-ranker:director:{id}</code></td><td><code>/api/directors/{id}</code></td><td><code>"Director Scoring version 5.1"</code></td></tr>
-            <tr><td><strong>Global Purger</strong></td><td><code>ani_algo_version</code></td><td><code>purgeStaleAniCache()</code></td><td><code>"actors-v26.4_directors-v5.1"</code></td></tr>
+            <tr><td><strong>Actors</strong></td><td><code>actor-merit-ranker:actor:{id}</code></td><td><code>/api/actors/{id}</code></td><td><code>26.5</code></td></tr>
+            <tr><td><strong>Directors</strong></td><td><code>actor-merit-ranker:director:{id}</code></td><td><code>/api/directors/{id}</code></td><td><code>"Director Scoring version 5.2"</code></td></tr>
+            <tr><td><strong>Global Purger</strong></td><td><code>ani_algo_version</code></td><td><code>purgeStaleAniCache()</code></td><td><code>"actors-v26.5_directors-v5.2"</code></td></tr>
           </tbody>
         </table>
       </div>
       <p>
-        De este modo, un perfil dual (por ejemplo, Clint Eastwood o Ben Affleck) mantiene notas independientes para su faceta interpretativa y su faceta de dirección. Al abrir la ficha de una película o serie, la cola de concurrencia (<code>max = 2</code>) comprueba primero los JSON seed y después <code>localStorage</code>; únicamente los créditos no cacheados se calculan al vuelo.
+        De este modo, un perfil dual (por ejemplo, Clint Eastwood o Ben Affleck) mantiene notas independientes para su faceta interpretativa y su faceta de dirección. Al abrir la ficha de una película o serie, la cola del cliente (<code>max = 2</code>) comprueba primero los JSON seed y después <code>localStorage</code>; las llamadas backend a TMDb se limitan a cinco en paralelo y reintentan errores 429. Los perfiles sin obras válidas no se guardan en caché.
       </p>
     </section>
 
@@ -565,8 +565,8 @@
         <table>
           <thead><tr><th>Ruta</th><th>Función / Vista</th><th>Descripción</th></tr></thead>
           <tbody>
-            <tr><td><code>/movie/{slug}-{id}</code></td><td><code>/api/movies/{id}</code></td><td>Ficha de película: póster, sinopsis, duración, nota 60/40 IMDb+TMDb, dirección y reparto con ANI Index.</td></tr>
-            <tr><td><code>/tv/{slug}-{id}</code></td><td><code>/api/tv/{id}</code></td><td>Ficha de serie/miniserie: años de emisión, temporadas y episodios, creadores/directores y reparto con ANI Index.</td></tr>
+            <tr><td><code>/movie/{slug}-{id}</code></td><td><code>/api/movies/{id}</code></td><td>Ficha de película con notas y votos IMDb/TMDb, rating ponderado 60/40, dirección y reparto con ANI Index.</td></tr>
+            <tr><td><code>/tv/{slug}-{id}</code></td><td><code>/api/tv/{id}</code></td><td>Ficha de serie/miniserie con notas y votos IMDb/TMDb, rating ponderado 75/25, temporadas, creadores/directores y reparto.</td></tr>
             <tr><td><code>/{slug}-{id}/ani</code> · <code>/details</code></td><td><code>ActorEmbed.jsx</code></td><td>Insignia o desglose embebible de actor (admite <code>?compact=true</code> y auto-resize <code>ani-embed-resize</code>).</td></tr>
             <tr><td><code>/directors/{slug}-{id}/ani</code> · <code>/details</code></td><td><code>ActorEmbed.jsx</code></td><td>Insignia o desglose embebible de director con código <code>&lt;iframe&gt;</code> listo para copiar.</td></tr>
             <tr><td><code>/docs</code></td><td><code>public/docs/index.html</code></td><td>Portal de documentación técnica estático servido directamente sin intercepción del router SPA.</td></tr>
@@ -588,7 +588,7 @@
         <table>
           <thead><tr><th>Pilar</th><th>Peso Base</th><th>Mecanismo Principal</th></tr></thead>
           <tbody>
-            <tr><td><strong>Filmography Quality</strong></td><td><code>40%</code></td><td>Ventana deslizante (6–8 obras), una entrega por saga en el Top 5 y peso 0.5× / 0.25× para las siguientes; ratings directos 60/40 IMDb+TMDb.</td></tr>
+            <tr><td><strong>Filmography Quality</strong></td><td><code>40%</code></td><td>Ventana deslizante (6–8 obras); decaimiento por saga 1.00× → 0.60× → 0.40× → 0.25× → 0.15× en selección y consistencia; ratings directos 60/40 IMDb+TMDb.</td></tr>
             <tr><td><strong>Awards Prestige</strong></td><td><code>30%</code></td><td>Oscars, BAFTA, Cannes, Venecia, Berlín, Globos de Oro, SAG y Emmys (0.60× para TV), con freno asimétrico umbralado a 18 pts.</td></tr>
             <tr><td><strong>Commercial Impact</strong></td><td><code>10%</code></td><td>Top 5 estrenos post-1980 (90% recaudación logarítmica ajustada por década + 10% ROI acotado 0.5×–10×, máx. 1/saga).</td></tr>
             <tr><td><strong>Critical Sentiment</strong></td><td><code>10%</code></td><td>Análisis VADER sobre frases de reseñas que mencionan al actor o personaje (tope 89 si faltan reseñas).</td></tr>
@@ -607,14 +607,14 @@ Rating_Final = (r_imdb &gt; 0)
 
 // Los votos solo aplican filtros de elegibilidad; no modifican el rating.</div>
       <p>
-        Mínimo de votos TMDb en cine <code>VOTING_THRESHOLD = 50</code> (relajado en TV a <code>TMDb &gt;= 25 || IMDb &gt;= 500</code>); estos umbrales no aplican curvas ni priors al score.
+        Mínimo de votos TMDb en cine <code>VOTING_THRESHOLD = 50</code> y en TV <code>TMDb &gt;= 50 || IMDb &gt;= 1,000</code>; también se descartan fechas vacías/futuras y películas de menos de 45 minutos cuando se conoce la duración. Estos umbrales no aplican curvas ni priors al score. Las fichas muestran siempre IMDb y TMDb con votos y la media ponderada; los tooltips de proyectos muestran <code>IMDb X.X · TMDb X.X → Final X.X</code>.
       </p>
     </section>
 
     <section id="actors-quality">
       <h3>Calidad de Filmografía (40%)</h3>
       <p>
-        Las películas se agrupan con <code>belongs_to_collection.id</code> y, si falta, por raíz común del título. En el Top 5 de calidad solo entra <strong>1 película por franquicia</strong>; las entregas posteriores pueden aportar consistencia con peso 0.5× para la segunda y 0.25× desde la tercera. El tamaño de ventana <code>selectedCount</code> depende de <code>workCount</code>:
+        Las películas se agrupan con <code>belongs_to_collection.id</code> y, si falta, por raíz común del título. Ninguna secuela se elimina: ordenadas de mayor a menor rating en cada saga, sus pesos son <strong>1.00× → 0.60× → 0.40× → 0.25× → 0.15×</strong>, aplicados a selección/ponderación del Top 5 y a consistencia. El tamaño de ventana <code>selectedCount</code> depende de <code>workCount</code>:
       </p>
       <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>if (workCount ∈ [3, 10])     → selectedCount = min(5, eligible.length)          // Carrera corta
 else if (workCount &lt;= 6)     → selectedCount = eligible.length
@@ -628,13 +628,13 @@ else                         → round(6 + ((workCount - 6) * 2) / 8)
 
 q = Σ(roleWeight * franchiseWeight * directRating) / Σ(roleWeight * franchiseWeight)
 Normalización: [6.0 → 25, midpoint (6.5 | 6.40) → 55, max (7.8 | 7.45) → 100]</div>
-      <p class="note">Bonus de trayectoria histórica, aplicado al resultado final tras <code>max(scoreBaseCine, scoreConSeries)</code>: +1.0 con span de 15–19 años y destacados en 2 décadas; +2.5 con 20–29 años y 3 décadas; +3.5 con 30+ años y 4+ décadas. Destacado = rating directo ≥ 7.3 y billing order ≤ 2.</p>
+      <p class="note">Se eliminó el bonus aditivo de trayectoria histórica: se conservan los pesos originales de pilares y la regla <code>max(scoreBaseCine, scoreConSeries)</code>, con techo natural aproximado de 94 y sin suavizado por volumen de votos.</p>
     </section>
 
     <section id="actors-tv">
-      <h3>Reglas de Inclusión de Series, Tramos por Episodios y No Penalización (<code>Actors v26.4</code>)</h3>
+      <h3>Reglas de Inclusión de Series, Tramos por Episodios y No Penalización (<code>Actors v26.5</code>)</h3>
       <ul>
-        <li><strong>Tipos admitidos y votos mínimos:</strong> <code>tvSeries</code> y <code>tvMiniSeries</code> con <code>TMDb votes &gt;= 25</code> o <code>IMDb votes &gt;= 500</code>, resolviendo obligatoriamente <code>external_ids.imdb_id</code> para cruzar con IMDb al <strong>75 % IMDb / 25 % TMDb</strong>.</li>
+        <li><strong>Tipos admitidos y votos mínimos:</strong> <code>tvSeries</code> y <code>tvMiniSeries</code> con <code>TMDb votes &gt;= 50</code> o <code>IMDb votes &gt;= 1,000</code>, resolviendo <code>external_ids.imdb_id</code> para cruzar con IMDb al <strong>75 % IMDb / 25 % TMDb</strong>.</li>
         <li><strong>Porcentaje de participación (excluyendo temporada 0 de especiales):</strong> <code>participacion = (episode_count / regular_episodes) * 100</code>.</li>
         <li><strong>Tramos de peso:</strong> <code>&lt; 35%</code> descartada · <code>35–49% → 0.35</code> · <code>50–74% → 0.50</code> · <code>75–89% → 0.75</code> · <code>90–100% → 1.00</code> (papel protagonista pleno).</li>
         <li><strong>Regla de No Penalización:</strong> Se calcula <code>scoreBaseCine</code> (solo películas) y <code>scoreConSeries</code> (cine + series), estableciendo <code>score = max(scoreBaseCine, scoreConSeries)</code>. Además, las series cuya nota directa sea inferior a la media cinematográfica del actor se ignoran en consistencia.</li>
@@ -726,7 +726,7 @@ PillarScore      = clamp(0.75 * GenreVersatility + 0.25 * AuthorshipIndex)</div>
         <table>
           <thead><tr><th>Rango ANI</th><th>Insignia / Nivel</th><th>Color</th><th>Criterio de Clasificación</th></tr></thead>
           <tbody>
-            <tr><td><code>93 – 100</code></td><td><strong>Pure Diamond (Élite Histórica)</strong></td><td>Cian cristalino / forma ◆</td><td>Excelencia sostenida en todos los pilares activos, prestigio S/A y legado canónico.</td></tr>
+            <tr><td><code>93 – 100</code></td><td><strong>Pure Diamond (Élite)</strong></td><td>Cian cristalino / forma ◆</td><td>Excelencia sostenida en todos los pilares activos, prestigio S/A y legado canónico.</td></tr>
             <tr><td><code>90 – 92</code></td><td><strong>Pseudodiamante</strong></td><td>Cian hielo / círculo</td><td>Nivel intermedio con paleta cristalina, conservando la geometría circular estándar.</td></tr>
             <tr><td><code>80 – 89</code></td><td><strong>Gold</strong></td><td>Dorado</td><td>Trayectorias de primer nivel mundial con alto reconocimiento crítico y premios mayores.</td></tr>
             <tr><td><code>60 – 79</code></td><td><strong>Silver</strong></td><td>Plateado</td><td>Carreras sólidas, consistentes y referentes comerciales o de género.</td></tr>
@@ -743,7 +743,7 @@ PillarScore      = clamp(0.75 * GenreVersatility + 0.25 * AuthorshipIndex)</div>
         <table>
           <thead><tr><th>Versión</th><th>Ámbito</th><th>Hitos Principales</th></tr></thead>
           <tbody>
-            <tr><td><strong>Actors v26.4 · Directors v5.1</strong></td><td>Actual</td><td>Ratings IMDb/TMDb directos, sin suavizado por volumen de votos; control de sagas, bonus histórico por décadas, pseudodiamante 90–92, diamante puro ≥ 93 e invalidación de caché.</td></tr>
+            <tr><td><strong>Actors v26.5 · Directors v5.2</strong></td><td>Actual</td><td>Ratings IMDb/TMDb directos y visibles, sin suavizado por volumen de votos; decaimiento progresivo de sagas, pseudodiamante circular 90–92, diamante puro ≥ 93 e invalidación de caché.</td></tr>
             <tr><td><strong>Actors v25 · Directors v4</strong></td><td>Anterior</td><td>Ponderación dual directa 60% IMDb / 40% TMDb, pipeline diario GitHub Actions + jsDelivr, ficha interactiva <code>/movie/:id</code>.</td></tr>
             <tr><td><strong>Actors v24 · Directors v4</strong></td><td>Base matemática</td><td>Congelación de ventana deslizante (6–8), freno asimétrico umbralado a 18 pts, compresión élite &gt; 88 en directores y embeds <code>&lt;iframe&gt;</code>.</td></tr>
           </tbody>

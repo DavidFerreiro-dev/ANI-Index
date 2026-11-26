@@ -1,4 +1,5 @@
-import { tvDetails, tvCreditsByShow } from "./lib/tmdb.mjs";
+import { tvDetails, tvExternalIds, tvCreditsByShow } from "./lib/tmdb.mjs";
+import { getBackendImdbRatings } from "./lib/imdb.mjs";
 
 function headers() {
   return {
@@ -25,9 +26,10 @@ export const handler = async (event) => {
   }
 
   try {
-    const [details, credits] = await Promise.all([
+    const [details, credits, imdbRatings] = await Promise.all([
       tvDetails(id),
-      tvCreditsByShow(id)
+      tvCreditsByShow(id),
+      getBackendImdbRatings()
     ]);
 
     if (!details) {
@@ -78,6 +80,8 @@ export const handler = async (event) => {
       ? (endYear && endYear !== startYear ? `${startYear} – ${endYear}` : startYear)
       : "";
 
+    const imdbId = details.external_ids?.imdb_id || (await tvExternalIds(id))?.imdb_id || null;
+    const imdbEntry = imdbId ? imdbRatings?.[imdbId] : null;
     const responseData = {
       id: details.id,
       media_type: "tv",
@@ -97,7 +101,9 @@ export const handler = async (event) => {
       genres: details.genres || [],
       vote_average: details.vote_average || 0,
       vote_count: details.vote_count || 0,
-      imdb_id: details.external_ids?.imdb_id || null,
+      imdb_id: imdbId,
+      imdb_rating: imdbEntry?.[0] ?? null,
+      imdb_votes: imdbEntry?.[1] ?? null,
       directors: [...directorMap.values()],
       cast: mainCast
     };

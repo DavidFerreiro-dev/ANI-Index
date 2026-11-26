@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import ScoreBadge from "./ScoreBadge.jsx";
 import { formatAniScore } from "../utils/aniScore.js";
 import EmbedDialog from "./EmbedDialog.jsx";
+import { formatProjectRating } from "../utils/projectRatingTooltip.js";
 
 export default function ActorModal({ actor, onClose, onOpenMovie, isDetailed = false }) {
   const [config, setConfig] = useState(null);
@@ -170,7 +171,7 @@ export default function ActorModal({ actor, onClose, onOpenMovie, isDetailed = f
                 type="button"
                 onClick={() => onOpenMovie?.(m.id, m.title, m.media_type || "movie")}
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-line/60 bg-card/40 px-3.5 py-2.5 text-left text-sm transition hover:border-sky-500/50 hover:bg-card/70 focus:outline-none focus:ring-2 focus:ring-sky-400/70"
-                title={`View ${m.title} cast and ratings`}
+                title={`View ${m.title} cast and ratings · ${formatProjectRating(m)}`}
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate font-medium text-slate-200">{m.title}{m.year && <span className="text-slate-500 text-xs"> ({m.year})</span>}</span>

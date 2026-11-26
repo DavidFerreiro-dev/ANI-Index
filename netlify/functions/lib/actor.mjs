@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { person, movieCredits, tvCredits, externalIds, reviews, movieDirectors, movieDetails, tvDetails, tvExternalIds } from "./tmdb.mjs";
+import { person, movieCredits, tvCredits, externalIds, reviews, movieDirectors, movieDetails, movieExternalIds, tvDetails, tvExternalIds } from "./tmdb.mjs";
 import { fetchAwards } from "./wikidata.mjs";
 import { getBackendImdbRatings } from "./imdb.mjs";
 import { compute, reviewMovies, validCredits, validWorks, tvParticipationWeight } from "./scoring.mjs";
@@ -59,15 +59,28 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
     if (collectionId && sagaIds.has(collectionId)) sagaMovieIds.push(topMovies[index].id);
   });
   const tvWorks = allWorks.filter((work) => work.media_type === "tv");
-  const [commercialDetails, tvDetailsList] = await Promise.all([
-    Promise.all(valid.map((movie) => movieDetails(movie.id))),
+  const [movieMetadata, tvDetailsList] = await Promise.all([
+    Promise.all(valid.map(async (movie) => {
+      const details = await movieDetails(movie.id);
+      const ext = details?.imdb_id ? null : await movieExternalIds(movie.id);
+      return { details, imdbId: details?.imdb_id || ext?.imdb_id || null };
+    })),
     Promise.all(tvWorks.map((series) => tvDetails(series.id)))
   ]);
+  const commercialDetails = movieMetadata.map((entry) => entry.details);
   const collectionByMovieId = new Map();
   const imdbIdByWorkKey = new Map();
+  const validMovieIds = new Set();
+  const today = new Date().toISOString().slice(0, 10);
   commercialDetails.forEach((details, index) => {
     const movie = valid[index];
-    if (details?.imdb_id) imdbIdByWorkKey.set(`movie:${movie.id}`, details.imdb_id);
+    const imdbId = movieMetadata[index].imdbId;
+    if (imdbId) imdbIdByWorkKey.set(`movie:${movie.id}`, imdbId);
+    const releaseDate = details?.release_date || movie.release_date || "";
+    const runtime = Number(details?.runtime) || 0;
+    if (releaseDate.length >= 10 && releaseDate <= today && (!runtime || runtime >= 45)) {
+      validMovieIds.add(movie.id);
+    }
     if (details?.belongs_to_collection?.id) {
       collectionByMovieId.set(movie.id, {
         id: details.belongs_to_collection.id,
@@ -105,6 +118,7 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
       }
     }
     if (mediaType === "movie") {
+      if (!validMovieIds.has(work.id)) return;
       const col = collectionByMovieId.get(work.id);
       if (col) {
         work.collectionId = col.id;
@@ -114,7 +128,7 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
     } else if (mediaType === "tv") {
       const tmdbVotes = Number(work.vote_count) || 0;
       const imdbVotes = Number(work.imdb_votes) || 0;
-      if (tmdbVotes < 25 && imdbVotes < 500) return;
+      if (tmdbVotes < 50 && imdbVotes < 1000) return;
 
       const totalEps = tvTotalEpisodesById.get(work.id) || 0;
       const epCount = Number(work.episode_count) || 0;
@@ -141,7 +155,7 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
       belongs_to_collection: details?.belongs_to_collection || null,
       weight
     };
-  });
+  }).filter((movie) => validMovieIds.has(movie.id));
   const standaloneMovies = [];
   const collectionById = new Map();
   for (const movie of commercialEntries) {
@@ -189,7 +203,7 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
   };
 }
 
-export async function buildActor(id) {
+export async function buildActor(id, attempt = 0) {
   const [personData, credits, tv, external, imdbRatings] = await Promise.all([
     person(id),
     movieCredits(id),
@@ -205,5 +219,9 @@ export async function buildActor(id) {
     qualityContext(personData.id, credits, tv, imdbRatings)
   ]);
   const actor = compute(personData, credits, awards, reviewsByMovie, selectedMovies, qualityOptions);
+  if (actor.valid_work_count === 0) {
+    if (attempt < 1) return buildActor(id, attempt + 1);
+    throw new Error(`Actor profile ${id} has no valid works after retry`);
+  }
   return actor;
 }

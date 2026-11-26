@@ -1,4 +1,5 @@
 import { movie, movieCast, movieCrew, movieExternalIds } from "./lib/tmdb.mjs";
+import { getBackendImdbRatings } from "./lib/imdb.mjs";
 
 function headers() {
   return {
@@ -25,12 +26,15 @@ export const handler = async (event) => {
   }
 
   try {
-    const [details, cast, crew, ext] = await Promise.all([
+    const [details, cast, crew, ext, imdbRatings] = await Promise.all([
       movie(id),
       movieCast(id),
       movieCrew(id),
-      movieExternalIds(id)
+      movieExternalIds(id),
+      getBackendImdbRatings()
     ]);
+    const imdbId = ext?.imdb_id || details.imdb_id || null;
+    const imdbEntry = imdbId ? imdbRatings?.[imdbId] : null;
 
     // Directors from crew
     const directors = (crew || [])
@@ -67,7 +71,9 @@ export const handler = async (event) => {
       genres: details.genres || [],
       vote_average: details.vote_average || 0,
       vote_count: details.vote_count || 0,
-      imdb_id: ext?.imdb_id || details.imdb_id || null,
+      imdb_id: imdbId,
+      imdb_rating: imdbEntry?.[0] ?? null,
+      imdb_votes: imdbEntry?.[1] ?? null,
       directors,
       cast: mainCast
     };

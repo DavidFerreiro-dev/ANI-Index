@@ -1,9 +1,11 @@
 const CACHE_PREFIX = "actor-merit-ranker:actor:";
 const DIRECTOR_CACHE_PREFIX = "actor-merit-ranker:director:";
 const DYNAMIC_ACTORS_KEY = "ani_dynamic_seeds";
-export const SCORING_VERSION = "26.4";
-export const DIRECTOR_SCORING_VERSION = "Director Scoring version 5.1";
-export const ANI_ALGO_VERSION = "actors-v26.4_directors-v5.1";
+const hasValidWorks = (profile) =>
+  Number.isFinite(Number(profile?.valid_work_count)) && Number(profile.valid_work_count) > 0;
+export const SCORING_VERSION = "26.5";
+export const DIRECTOR_SCORING_VERSION = "Director Scoring version 5.2";
+export const ANI_ALGO_VERSION = "actors-v26.5_directors-v5.2";
 const ANI_ALGO_VERSION_KEY = "ani_algo_version";
 
 export function purgeStaleAniCache() {
@@ -22,12 +24,12 @@ export function purgeStaleAniCache() {
 
 export function isActorValid(actor) {
   if (!actor || typeof actor !== "object") return false;
-  return actor.scoring_version === SCORING_VERSION;
+  return actor.scoring_version === SCORING_VERSION && hasValidWorks(actor);
 }
 
 export function isDirectorValid(dir) {
   if (!dir || typeof dir !== "object") return false;
-  return dir.scoring_version === DIRECTOR_SCORING_VERSION;
+  return dir.scoring_version === DIRECTOR_SCORING_VERSION && hasValidWorks(dir);
 }
 
 export function getCachedActor(id) {
@@ -67,7 +69,7 @@ export function getCachedActors() {
 }
 
 export function cacheActor(actor) {
-  if (!actor?.id) return;
+  if (!actor?.id || !isActorValid(actor)) return;
   if (actor.awards_status === "unavailable") return;
   try {
     localStorage.setItem(CACHE_PREFIX + actor.id, JSON.stringify(actor));
@@ -137,7 +139,7 @@ export function getCachedDirectors() {
 }
 
 export function cacheDirector(director) {
-  if (!director?.id || !director?.score) return;
+  if (!director?.id || !director?.score || !isDirectorValid(director)) return;
   try {
     localStorage.setItem(DIRECTOR_CACHE_PREFIX + director.id, JSON.stringify(director));
   } catch {}

@@ -1,4 +1,5 @@
 import ScoreBadge from "./ScoreBadge.jsx";
+import { formatProjectRating } from "../utils/projectRatingTooltip.js";
 
 export default function ActorCard({ actor, onOpen, onOpenMovie, mode = "Actors", isDetailed = false }) {
   const projects = actor.leads || [];
@@ -27,7 +28,7 @@ export default function ActorCard({ actor, onOpen, onOpenMovie, mode = "Actors",
                   onOpenMovie?.(m.id, m.title, m.media_type || "movie");
                 }}
                 className="flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-sm transition hover:bg-coal hover:text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400/70"
-                title={`View ${m.title} cast and ratings`}
+                title={`View ${m.title} cast and ratings · ${formatProjectRating(m)}`}
               >
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate text-slate-200">{m.title}</span>

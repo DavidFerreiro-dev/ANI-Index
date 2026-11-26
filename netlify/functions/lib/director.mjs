@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { person, personCrewCredits, personTvCrewCredits, externalIds, movieDetails, movieCrew, tvDetails, tvCreditsByShow } from "./tmdb.mjs";
+import { person, personCrewCredits, personTvCrewCredits, externalIds, movieDetails, movieExternalIds, movieCrew, tvDetails, tvExternalIds, tvCreditsByShow } from "./tmdb.mjs";
 import { fetchAwards } from "./wikidata.mjs";
 import { getBackendImdbRatings, computeDualRating } from "./imdb.mjs";
 
@@ -78,7 +78,7 @@ export function directorAwardsScore(awards) {
   return [score, counted, ignored];
 }
 
-export async function buildDirector(id) {
+export async function buildDirector(id, attempt = 0) {
   const [personData, credits, tvCrewCredits, external, imdbRatings] = await Promise.all([
     person(id), personCrewCredits(id), personTvCrewCredits(id), externalIds(id), getBackendImdbRatings()
   ]);
@@ -86,10 +86,11 @@ export async function buildDirector(id) {
   const detailEntries = await Promise.all(directedCredits.map(async (credit) => {
     const [details, crew] = await Promise.all([movieDetails(credit.id), movieCrew(credit.id)]);
     if (!details) return null;
+    const ext = details.imdb_id ? null : await movieExternalIds(credit.id);
     return {
       ...details,
       media_type: "movie",
-      imdb_id: details.imdb_id || null,
+      imdb_id: details.imdb_id || ext?.imdb_id || null,
       crew,
       crew_order: credit.order,
       vote_count: details.vote_count ?? credit.vote_count ?? 0,
@@ -101,9 +102,10 @@ export async function buildDirector(id) {
     !movie.adult &&
     movie.video !== true &&
     movie.status === "Released" &&
-    Number(movie.runtime) >= 60 &&
+    (!Number(movie.runtime) || Number(movie.runtime) >= 45) &&
     !(movie.genres || []).some((genre) => genre.id === 99) &&
-    (movie.release_date || "").length >= 10
+    (movie.release_date || "").length >= 10 &&
+    movie.release_date <= new Date().toISOString().slice(0, 10)
   );
 
   // Directed TV series & miniseries (deduplicated per series ID)
@@ -125,16 +127,22 @@ export async function buildDirector(id) {
     if (details.adult) return null;
     if (["Planned", "In Production", "Rumored"].includes(details.status)) return null;
     if ((details.genres || []).some((genre) => EXCLUDED_TV_GENRES.includes(genre.id))) return null;
+    let imdbId = details.external_ids?.imdb_id || null;
+    if (!imdbId) imdbId = (await tvExternalIds(credit.id))?.imdb_id || null;
+    const imdbEntry = imdbId ? imdbRatings?.[imdbId] : null;
     const voteCount = details.vote_count ?? credit.vote_count ?? 0;
-    if (voteCount < 50) return null;
+    const imdbVotes = Number(imdbEntry?.[1]) || 0;
+    if (voteCount < 50 && imdbVotes < 1000) return null;
     const releaseDate = details.first_air_date || "";
-    if (releaseDate.length < 10) return null;
+    if (releaseDate.length < 10 || releaseDate > new Date().toISOString().slice(0, 10)) return null;
     return {
       ...details,
       media_type: "tv",
       title: details.name || credit.name || "",
       release_date: releaseDate,
-      imdb_id: details.external_ids?.imdb_id || null,
+      imdb_id: imdbId,
+      imdb_rating: imdbEntry?.[0] || null,
+      imdb_votes: imdbVotes,
       belongs_to_collection: { id: `tv:${details.id}`, name: details.name || "" },
       crew: tvCreds?.crew || [],
       revenue: 0,
@@ -149,6 +157,10 @@ export async function buildDirector(id) {
     const entry = work.imdb_id ? imdbRatings?.[work.imdb_id] : null;
     return entry ? { ...work, imdb_rating: entry[0], imdb_votes: entry[1] } : work;
   });
+  if (valid.length === 0) {
+    if (attempt < 1) return buildDirector(id, attempt + 1);
+    throw new Error(`Director profile ${id} has no valid works after retry`);
+  }
 
   const validWithRatings = valid.map((movie) => ({ ...movie, rating: blendedRating(movie) }));
 
@@ -305,7 +317,7 @@ export async function buildDirector(id) {
     profile: personData.profile_path || null,
     summary: (personData.biography || "").replace(/\u00a0/g, " ").normalize("NFKC").trim().slice(0, 320),
     score,
-    scoring_version: "Director Scoring version 5.1",
+    scoring_version: "Director Scoring version 5.2",
     mode: "Directors",
     pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) => [key, value])),
     valid_work_count: valid.length,
@@ -319,6 +331,11 @@ export async function buildDirector(id) {
       title: movie.title,
       media_type: movie.media_type || "movie",
       rating: Math.round(Number(movie.vote_average) * 10) / 10,
+      tmdb_rating: Number(movie.vote_average) || 0,
+      tmdb_votes: Number(movie.vote_count) || 0,
+      imdb_rating: Number(movie.imdb_rating) || null,
+      imdb_votes: Number(movie.imdb_votes) || 0,
+      final_rating: Math.round(blendedRating(movie) * 10) / 10,
       year: (movie.release_date || "").slice(0, 4)
     }))
   };

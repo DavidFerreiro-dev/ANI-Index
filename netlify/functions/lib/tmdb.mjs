@@ -2,6 +2,22 @@ const BASE = "https://api.themoviedb.org/3";
 const movieDirectorCache = new Map();
 const movieDetailsCache = new Map();
 const tvDetailsCache = new Map();
+const MAX_CONCURRENT_REQUESTS = 5;
+let activeRequests = 0;
+const requestQueue = [];
+
+async function acquireRequestSlot() {
+  if (activeRequests < MAX_CONCURRENT_REQUESTS) {
+    activeRequests++;
+    return;
+  }
+  await new Promise((resolve) => requestQueue.push(resolve));
+}
+
+function releaseRequestSlot() {
+  if (requestQueue.length) requestQueue.shift()();
+  else activeRequests--;
+}
 
 export async function tmdbGet(path, params = {}, timeoutMs = 8000) {
   const key = process.env.TMDB_API_KEY;
@@ -16,8 +32,10 @@ export async function tmdbGet(path, params = {}, timeoutMs = 8000) {
   for (const [name, value] of Object.entries(params)) url.searchParams.set(name, String(value));
 
   for (let attempt = 0; attempt < 4; attempt++) {
+    await acquireRequestSlot();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let retryDelayMs = 1500 * (attempt + 1);
     try {
       const response = await fetch(url, { headers, signal: controller.signal });
       if (!response.ok) {
@@ -26,6 +44,12 @@ export async function tmdbGet(path, params = {}, timeoutMs = 8000) {
         }
         if (response.status !== 429 && response.status < 500) {
           throw new Error(`TMDb request failed: ${response.status}`);
+        }
+        if (response.status === 429) {
+          const retryAfter = Number(response.headers.get("retry-after"));
+          if (Number.isFinite(retryAfter) && retryAfter > 0) {
+            retryDelayMs = retryAfter * 1000;
+          }
         }
       } else {
         return await response.json();
@@ -36,8 +60,9 @@ export async function tmdbGet(path, params = {}, timeoutMs = 8000) {
       ) throw error;
     } finally {
       clearTimeout(timer);
+      releaseRequestSlot();
     }
-    await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
   }
   throw new Error("TMDb request failed after retries");
 }
@@ -61,10 +86,9 @@ export async function tvDetails(id) {
   if (tvDetailsCache.has(id)) return tvDetailsCache.get(id);
   try {
     const details = await tmdbGet(`/tv/${id}`, { append_to_response: "external_ids" });
-    tvDetailsCache.set(id, details);
+    if (details) tvDetailsCache.set(id, details);
     return details;
   } catch {
-    tvDetailsCache.set(id, null);
     return null;
   }
 }
@@ -86,7 +110,6 @@ export async function movieDirectors(id) {
     movieDirectorCache.set(id, directors);
     return directors;
   } catch {
-    movieDirectorCache.set(id, null);
     return null;
   }
 }
@@ -94,10 +117,9 @@ export async function movieDetails(id) {
   if (movieDetailsCache.has(id)) return movieDetailsCache.get(id);
   try {
     const details = await tmdbGet(`/movie/${id}`);
-    movieDetailsCache.set(id, details);
+    if (details) movieDetailsCache.set(id, details);
     return details;
   } catch {
-    movieDetailsCache.set(id, null);
     return null;
   }
 }
@@ -106,6 +128,6 @@ export async function reviews(id) {
   catch { return []; }
 }
 export async function movieExternalIds(id) {
-  try { return tmdbGet(`/movie/${id}/external_ids`); }
+  try { return await tmdbGet(`/movie/${id}/external_ids`); }
   catch { return {}; }
 }

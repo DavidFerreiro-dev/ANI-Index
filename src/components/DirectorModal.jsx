@@ -3,6 +3,7 @@ import { useState } from "react";
 import ScoreBadge from "./ScoreBadge.jsx";
 import { formatAniScore } from "../utils/aniScore.js";
 import EmbedDialog from "./EmbedDialog.jsx";
+import { formatProjectRating } from "../utils/projectRatingTooltip.js";
 
 const PILLARS = [
   ["quality", "Filmography Quality & Consistency", 40],
@@ -98,7 +99,7 @@ export default function DirectorModal({ director, onClose, onOpenMovie, isDetail
                 type="button"
                 onClick={() => onOpenMovie?.(movie.id, movie.title, movie.media_type || "movie")}
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-line/60 bg-card/40 px-3.5 py-2.5 text-left text-sm transition hover:border-sky-500/50 hover:bg-card/70 focus:outline-none focus:ring-2 focus:ring-sky-400/70"
-                title={`View ${movie.title} cast and ratings`}
+                title={`View ${movie.title} cast and ratings · ${formatProjectRating(movie)}`}
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate font-medium text-slate-200">{movie.title}{movie.year ? ` (${movie.year})` : ""}</span>

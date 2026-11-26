@@ -1,5 +1,5 @@
 export const SCORING_CONFIG = {
-  SCORING_VERSION: "26.4",
+  SCORING_VERSION: "26.5",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
   FILMOGRAPHY_WORKS: { few: 6, many: 14 },

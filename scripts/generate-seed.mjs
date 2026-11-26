@@ -117,9 +117,10 @@ let imdbRatingsCache = null;
 async function searchPerson(name) {
   const results = await tmdbSearchPerson(name);
   return (
-    results?.find(
-      (item) => item.known_for_department === "Acting"
-    ) || results?.[0]
+    results?.find((item) => item.known_for_department === "Acting" && item.profile_path) ||
+    results?.find((item) => item.profile_path) ||
+    results?.find((item) => item.known_for_department === "Acting") ||
+    results?.[0]
   );
 }
 
@@ -183,7 +184,7 @@ async function buildOne(name) {
       qualityContext(search.id, credits, tv, imdbRatingsCache)
     ]);
 
-    return compute(
+    const actor = compute(
       personData,
       credits,
       awards,
@@ -191,6 +192,8 @@ async function buildOne(name) {
       selectedMovies,
       qualityOptions
     );
+    if (actor.valid_work_count === 0) throw new Error("Actor profile has no valid works");
+    return actor;
 
   } catch (error) {
     console.error(`\n[ERROR] ${name}: ${error.message}`);
@@ -258,7 +261,8 @@ const actors = await mapWithConcurrency(
       startTime
     );
 
-    return result || existingByName.get(name) || null;
+    const previous = existingByName.get(name);
+    return result || (previous?.scoring_version === "26.5" ? previous : null);
   }
 );
 
@@ -267,6 +271,7 @@ process.stdout.write("\n\n");
 // Ordenar por puntuación
 const seed = actors
   .filter(Boolean)
+  .filter((actor) => actor.scoring_version === "26.5" && actor.valid_work_count > 0)
   .sort((a, b) => b.score - a.score);
 
 // Exportar

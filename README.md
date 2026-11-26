@@ -10,16 +10,16 @@ Actor & Director Merit Ranker is a serverless web application that evaluates and
 
 The **ANI Index (Artistic & Narrative Index)** measures sustained artistic merit, peer recognition, narrative versatility, and cultural impact across feature films, TV series, and miniseries while limiting franchise repetition and avoiding vote-volume rating smoothing.
 
-### 1. ANI Index — Actors v26.4
+### 1. ANI Index — Actors v26.5
 
-The actor model synthesizes five weighted pillars across cinema and television (`tvSeries` / `tvMiniSeries` evaluated by episode participation percentage excluding Season 0 specials: `< 35%` discarded, `35–49% → 0.35`, `50–74% → 0.50`, `75–89% → 0.75`, `90–100% → 1.00`; relaxed vote gate `TMDb ≥ 25` or `IMDb ≥ 500`; non-penalization floor `max(scoreBaseCine, scoreConSeries)`):
+The actor model synthesizes five weighted pillars across cinema and television (`tvSeries` / `tvMiniSeries` evaluated by episode participation percentage excluding Season 0 specials: `< 35%` discarded, `35–49% → 0.35`, `50–74% → 0.50`, `75–89% → 0.75`, `90–100% → 1.00`; TV vote gate `TMDb ≥ 50` or `IMDb ≥ 1,000`; non-penalization floor `max(scoreBaseCine, scoreConSeries)`):
 
 - **Filmography Quality (40%):** Evaluates direct weighted ratings (**60% IMDb / 40% TMDb** for movies; **75% IMDb / 25% TMDb** for TV series, 100% TMDb fallback) on a continuous sliding window (6 to 8 works), without vote-volume smoothing:
-  - **Franchise control:** Groups collections by `belongs_to_collection.id`, with title-root matching as fallback. At most one installment per franchise can occupy the Top 5; later entries count toward consistency at 0.5× for the second and 0.25× from the third.
+  - **Franchise weighting:** Groups by `belongs_to_collection.id`, with title-root matching as fallback. All installments remain eligible; for each actor's titles in a franchise, the highest-rated receives 1.00×, followed by 0.60×, 0.40×, 0.25×, and 0.15× for subsequent installments. The decay affects Top 5 selection/quality and the consistency window.
   - **Career Sliding Window:** Evaluates all eligible works for careers with $\le 6$ works, sliding up to 8 works for careers with $\ge 14$ works.
   - **Short Careers (3–10 works):** Evaluates top 5 works with customized role weights (Lead 0: 1.35, Order 1: 1.05, Order 2: 0.65, Orders 3–5: 0.15, minor: 0.05) and softer volume calibration (midpoint 6.40, ceiling 7.45) to fairly reflect breakout performers without artificial inflation.
   - **Statistical Multipliers:** 1.25× prestige director multiplier, 1.15× awarded film multiplier, and standard billing order weights.
-- **Historical Career Bonus:** Adds up to 3.5 points after the cinema/TV non-penalization rule for long careers with highlighted films (direct rating ≥ 7.3 and billing order ≤ 2) spanning multiple decades: +1.0 at 15–19 years / 2 decades, +2.5 at 20–29 years / 3 decades, and +3.5 at 30+ years / 4 decades.
+- **Score calibration:** The former additive historical-career bonus has been removed. Original pillar weights and the natural score ceiling (approximately 94) are preserved; ratings remain unsmoothed by vote volume.
 - **Awards Prestige (30%):** Weighted acting-specific honors:
   - **Tier S:** Academy Awards (Lead: 38 won / 10 nom; Supporting: 18 won / 6 nom) and festival/BAFTA honors (Lead: 24 won / 8 nom; Supporting: 11 won / 4.5 nom).
   - **Tier A:** Golden Globes, SAG, Critics Choice, and major industry guilds.
@@ -35,6 +35,10 @@ The actor model synthesizes five weighted pillars across cinema and television (
 - **Pure Diamond (93–100):** crystalline diamond-shaped badge.
 - **Pseudodiamond (90–92):** standard circular badge with the ice-cyan diamond palette.
 - **Gold (80–89):** standard circular badge with the usual gold palette.
+
+Movie and TV detail sheets always show IMDb rating/votes, TMDb rating/votes, and the official weighted rating. Actor/director project tooltips show `IMDb X.X · TMDb X.X → Final X.X`.
+
+Eligibility excludes missing or future release dates and films shorter than 45 minutes when runtime is available. TMDb calls are globally limited to five concurrent requests and retry rate limits; profiles with no valid works are retried and never cached.
 
 ### 2. ANI Index — Directors v5
 

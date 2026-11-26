@@ -59,7 +59,6 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [ratingTab, setRatingTab] = useState("both"); // "both" | "imdb" | "tmdb"
   const [imdbData, setImdbData] = useState(null);
   const [aniScores, setAniScores] = useState({}); // { [id]: { score, loading, error, entity } }
   const isMountedRef = useRef(true);
@@ -329,46 +328,18 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
             </div>
           </div>
 
-          {/* Ratings Block with official SVG logos and Quick Tabs */}
+          {/* Ratings block with the three ratings always visible */}
           <div className="rounded-2xl border border-line bg-card/50 p-4 sm:p-5 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <Star size={14} className="text-amber-400 fill-amber-400" /> Official Ratings &amp; Consensus
               </h3>
-
-              {/* Tabs Selector: Ambos | IMDb | TMDb */}
-              <div className="inline-flex rounded-lg border border-line/80 bg-coal/80 p-0.5 text-xs self-start sm:self-auto">
-                <button
-                  onClick={() => setRatingTab("both")}
-                  className={`rounded-md px-2.5 py-1 font-semibold transition ${
-                    ratingTab === "both" ? "bg-sky-500 text-black shadow" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  Ambos ({splitLabel})
-                </button>
-                <button
-                  onClick={() => setRatingTab("imdb")}
-                  className={`rounded-md px-2.5 py-1 font-semibold transition ${
-                    ratingTab === "imdb" ? "bg-amber-400 text-black shadow" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  IMDb
-                </button>
-                <button
-                  onClick={() => setRatingTab("tmdb")}
-                  className={`rounded-md px-2.5 py-1 font-semibold transition ${
-                    ratingTab === "tmdb" ? "bg-sky-400 text-black shadow" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  TMDb
-                </button>
-              </div>
             </div>
 
             {/* Ratings Display Content */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               {/* Combined Weighted Score */}
-              {(ratingTab === "both" || ratingTab === "imdb") && combinedScore && (
+              {combinedScore && (
                 <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-sky-300">Ponderada ({splitLabel})</span>
@@ -383,8 +354,7 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
               )}
 
               {/* IMDb Block */}
-              {(ratingTab === "both" || ratingTab === "imdb") && (
-                <div className="rounded-xl border border-line/60 bg-coal/60 p-3 flex flex-col justify-between">
+              <div className="rounded-xl border border-line/60 bg-coal/60 p-3 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <img src={IMDB_LOGO} alt="IMDb" className="h-4 w-auto" />
                     {movie.imdb_id && (
@@ -406,12 +376,10 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
                   <span className="text-[11px] text-slate-400 mt-1">
                     {imdbVotes ? `${imdbVotes} votos` : "Datos no disponibles"}
                   </span>
-                </div>
-              )}
+              </div>
 
               {/* TMDb Block */}
-              {(ratingTab === "both" || ratingTab === "tmdb") && (
-                <div className="rounded-xl border border-line/60 bg-coal/60 p-3 flex flex-col justify-between">
+              <div className="rounded-xl border border-line/60 bg-coal/60 p-3 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <img src={TMDB_LOGO} alt="TMDb" className="h-3.5 w-auto" />
                     <a
@@ -429,8 +397,7 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
                     <span className="text-xs text-slate-400">/ 10</span>
                   </div>
                   <span className="text-[11px] text-slate-400 mt-1">{tmdbVotes} votos</span>
-                </div>
-              )}
+              </div>
             </div>
           </div>
 

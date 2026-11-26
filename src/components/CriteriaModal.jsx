@@ -3,7 +3,7 @@ import { X, Award, Film, DollarSign, MessageSquare, Compass, BookOpen, Layers } 
 import ScoreBadge from "./ScoreBadge.jsx";
 
 const FALLBACK = {
-  SCORING_VERSION: "26.4",
+  SCORING_VERSION: "26.5",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
   FILMOGRAPHY_WORKS: { few: 6, many: 14 },
@@ -66,7 +66,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 5 evaluates feature films, TV series, and miniseries using a direct <strong>60% IMDb / 40% TMDb</strong> rating blend, without vote-volume smoothing, across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 5.2 evaluates feature films, TV series, and miniseries using a direct <strong>60% IMDb / 40% TMDb</strong> rating blend, without vote-volume smoothing, across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
             </div>
 
             {/* Pillar Breakdown Table */}
@@ -235,13 +235,16 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
               <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 26 evaluates acting careers across cinema, TV series, and miniseries using direct IMDb/TMDb ratings without vote-volume smoothing: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
             </div>
+            <div className="rounded-xl border border-cyan-400/20 bg-cyan-950/20 p-4 text-xs sm:text-sm text-slate-200">
+              <strong className="text-cyan-200">Badge tiers:</strong> Pure Diamond (93–100) uses the exclusive rotated diamond; Pseudodiamond (90–92) keeps the standard circle with the ice-cyan diamond palette; Gold (80–89) remains circular and gold. Movie/TV detail sheets always show IMDb and TMDb ratings with vote counts plus the weighted final rating; project tooltips show <code>IMDb X.X · TMDb X.X → Final X.X</code>.
+            </div>
 
-            {/* TV & Hybrid Source Rules (v26.4) */}
+            {/* TV & Hybrid Source Rules (v26.5) */}
             <div className="rounded-xl border border-line/70 bg-card/40 p-4 text-xs sm:text-sm space-y-1.5">
-              <div className="font-bold text-white">TV Series, Miniseries &amp; Direct Rating Blending (v26.4)</div>
+              <div className="font-bold text-white">TV Series, Miniseries &amp; Direct Rating Blending (v26.5)</div>
               <ul className="list-disc space-y-1 pl-5 text-slate-300">
                 <li><strong>Source Weighting:</strong> Films blend <strong>60% IMDb / 40% TMDb</strong>; TV series &amp; miniseries blend <strong>75% IMDb / 25% TMDb</strong> directly, with instant 100% TMDb fallback when IMDb data is unavailable. Vote counts do not smooth ratings.</li>
-                <li><strong>Relaxed TV Vote Threshold:</strong> TV series qualify with <code className="text-sky-300 font-mono">TMDb votes ≥ 25</code> or <code className="text-sky-300 font-mono">IMDb votes ≥ 500</code> so prestige cable/indie series are never dropped.</li>
+                <li><strong>TV Vote Threshold:</strong> TV series qualify with <code className="text-sky-300 font-mono">TMDb votes ≥ 50</code> or <code className="text-sky-300 font-mono">IMDb votes ≥ 1,000</code>.</li>
                 <li><strong>Episode Participation Brackets (excluding Season 0 specials):</strong> <code className="text-sky-300 font-mono">&lt; 35%</code> discarded · <code className="text-sky-300 font-mono">35–49% → 0.35</code> · <code className="text-sky-300 font-mono">50–74% → 0.50</code> · <code className="text-sky-300 font-mono">75–89% → 0.75</code> · <code className="text-sky-300 font-mono">90–100% → 1.00</code> (full lead weight).</li>
                 <li><strong>Non-Penalization Rule:</strong> Final score is <code className="text-sky-300 font-mono">max(scoreBaseCine, scoreConSeries)</code>, and TV series below the actor's cinema mean rating are ignored in consistency so TV can only boost or preserve the film score.</li>
                 <li><strong>Strict Exclusions:</strong> Documentary (<code className="text-sky-300 font-mono">99</code>), News (<code className="text-sky-300 font-mono">10763</code>), Reality (<code className="text-sky-300 font-mono">10764</code>), Talk Show (<code className="text-sky-300 font-mono">10767</code>), Game-Show, TV Movie (<code className="text-sky-300 font-mono">10770</code>), voice-only roles, <code className="text-sky-300 font-mono">tvEpisode</code>, non-fictional credits (<code className="text-sky-300 font-mono">Self/Himself/Herself/Narrator/Host/Guest/Contestant</code>), and wrestling/MMA events (WWE, UFC, WrestleMania, etc.) are discarded.</li>
@@ -262,7 +265,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                   <tr>
                     <td className="p-3 font-semibold text-white">Filmography Quality</td>
                     <td className="p-3 font-bold text-sky-300">40%</td>
-                    <td className="p-3">Sliding window (6–8 works); one franchise entry in the Top 5, then 0.5× for the second and 0.25× from the third; short-career lead weighting</td>
+                    <td className="p-3">Sliding window (6–8 works); franchise weights 1.00× / 0.60× / 0.40× / 0.25× / 0.15× for successive best-to-worst entries; short-career lead weighting</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-semibold text-white">Awards Prestige</td>
@@ -315,8 +318,8 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                 <Film size={18} className="text-sky-400" /> Filmography Quality (40%)
               </h3>
               <ul className="mt-2 list-disc space-y-1 pl-5">
-                <li><strong>Eligibility:</strong> Released movies and series with at least {config.VOTING_THRESHOLD} votes. Documentaries (genre 99), TV movies, self appearances, archive footage, and voice roles are strictly excluded.</li>
-                <li><strong>Franchise handling:</strong> Group films by TMDb <code className="text-sky-300 font-mono">belongs_to_collection.id</code>, with title-root matching as fallback. Only <strong>one entry per franchise</strong> may occupy the Top 5; later eligible entries remain in consistency at <strong>0.5× for the second</strong> and <strong>0.25× from the third</strong>.</li>
+                <li><strong>Eligibility:</strong> Released titles must have a non-future release date; films shorter than 45 minutes are excluded when runtime is available. Documentaries (genre 99), TV movies, self appearances, archive footage, and voice roles are strictly excluded.</li>
+                <li><strong>Franchise handling:</strong> Group films by TMDb <code className="text-sky-300 font-mono">belongs_to_collection.id</code>, with title-root matching as fallback. Every sequel remains eligible; each franchise's highest-rated title counts at <strong>1.00×</strong>, followed by <strong>0.60×, 0.40×, 0.25×, then 0.15×</strong> for later entries. These weights apply to Top 5 selection/quality and the consistency window.</li>
                 <li><strong>Continuous Sliding Window:</strong>
                   <ul className="list-circle pl-5 mt-1 space-y-0.5">
                     <li>If career has ≤ 6 valid works: all eligible works are evaluated.</li>
@@ -343,7 +346,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
             </div>
 
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm">
-              <strong className="text-sky-300">Historical Career Bonus:</strong> Adds up to 3.5 points after the cinema/TV non-penalization rule. Active span is measured between the first and last valid film, and highlighted films (rating ≥ 7.3, billing order ≤ 2) must cover 2, 3, or 4 decades for +1.0 (15–19 years), +2.5 (20–29 years), or +3.5 (30+ years), respectively.
+              <strong className="text-sky-300">Score calibration:</strong> The historical career bonus has been removed. The final score remains the original weighted-pillar formula, with no additive points or vote-volume smoothing; the natural scale ceiling remains approximately 94.
             </div>
 
             {/* 3. Awards Prestige */}

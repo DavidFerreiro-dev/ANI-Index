@@ -59,7 +59,7 @@ export function validWorks(movieCredits, tvCredits) {
   const today = new Date().toISOString().slice(0, 10);
   const excludedTv = Cfg.EXCLUDED_TV_GENRES || [99, 10763, 10764, 10767, 10770];
   // For TV series, do not filter by fixed episode_count or high TMDb vote threshold here;
-  // episode participation % (vs regular seasons) and relaxed vote threshold (TMDb >= 25 || IMDb >= 500)
+  // episode participation % (vs regular seasons) and vote threshold (TMDb >= 50 || IMDb >= 1000)
   // are evaluated after resolving tvDetails & IMDb IDs in actor.mjs.
   const series = (tvCredits || [])
     .filter((credit) => {
@@ -116,24 +116,40 @@ export function rating(credit) {
   );
 }
 
-export function historicalCareerBonus(works) {
-  const movies = works.filter((work) => (work.media_type || "movie") === "movie");
-  const years = movies
-    .map((work) => Number(String(work.release_date || "").slice(0, 4)))
-    .filter((year) => Number.isInteger(year) && year > 0);
-  if (!years.length) return { careerSpan: 0, decades: [], bonus: 0 };
+function normalizeFranchiseText(value) {
+  return String(value || "").toLowerCase().normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’']/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  const careerSpan = Math.max(...years) - Math.min(...years);
-  const decades = [...new Set(movies
-    .filter((work) => work.order <= 2 && rating(work) >= 7.3)
-    .map((work) => Math.floor(Number(String(work.release_date || "").slice(0, 4)) / 10) * 10)
-    .filter((decade) => Number.isFinite(decade) && decade > 0))]
-    .sort((a, b) => a - b);
-  const bonus = careerSpan >= 30 && decades.length >= 4 ? 3.5
-    : careerSpan >= 20 && decades.length >= 3 ? 2.5
-      : careerSpan >= 15 && decades.length >= 2 ? 1
-        : 0;
-  return { careerSpan, decades, bonus };
+export function getFranchiseKey(title, originalTitle = "") {
+  const candidates = [originalTitle, title].map(normalizeFranchiseText).filter(Boolean);
+  const franchiseAliases = [
+    ["avengers", /\b(?:the )?avengers\b/],
+    ["spider-man", /\bspider[\s-]*man\b|\bspiderman\b/],
+    ["john-wick", /\bjohn wick\b/],
+    ["dune", /\bdune\b/],
+    ["hunger-games", /\bhunger games\b/],
+    ["padre-no-hay-mas-que-uno", /\bpadre no hay mas que uno\b/],
+    ["star-wars", /\bstar wars\b/],
+    ["pirates-of-the-caribbean", /\b(?:pirates of the caribbean|piratas del caribe)\b/]
+  ];
+  for (const [key, pattern] of franchiseAliases) {
+    if (candidates.some((candidate) => pattern.test(candidate))) return `known:${key}`;
+  }
+
+  const roots = candidates.map((candidate) => candidate
+    .split(/:|–|—|\s-\s/, 1)[0]
+    .replace(/\b(?:part|chapter|vol(?:ume)?|episode)\.?\s*(?:\d+|[ivxlcdm]+)\b.*$/i, "")
+    .replace(/\s+(?:\d+|[ivxlcdm]+)$/i, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim())
+    .filter(Boolean)
+    .sort((a, b) => a.length - b.length);
+  return roots[0] || candidates[0] || "";
 }
 
 export function quality(valid, qualityOptions = {}) {
@@ -146,69 +162,6 @@ export function quality(valid, qualityOptions = {}) {
   const collectionByMovieId = qualityOptions.collectionByMovieId;
 
   const movieWorks = allWorks.filter((work) => (work.media_type || "movie") === "movie");
-  const parentById = new Map(movieWorks.map((work) => [work.id, work.id]));
-  const findParent = (id) => {
-    let parent = parentById.get(id);
-    while (parentById.get(parent) !== parent) parent = parentById.get(parent);
-    let current = id;
-    while (parentById.get(current) !== parent) {
-      const next = parentById.get(current);
-      parentById.set(current, parent);
-      current = next;
-    }
-    return parent;
-  };
-  const normalizeTitle = (title) => String(title || "").toLowerCase().normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "");
-  const titleWords = new Map(movieWorks.map((work) => [
-    work.id,
-    normalizeTitle(work.title).match(/[a-z0-9]+/g) || []
-  ]));
-  const titleRoots = new Map(movieWorks.map((work) => {
-    const title = normalizeTitle(work.title);
-    const root = title.split(/[:–—]/, 1)[0].trim();
-    const words = title.match(/[a-z0-9]+/g) || [];
-    const sequelRoot = /^(?:\d+|ii|iii|iv|v|vi|vii|viii|ix|x)$/.test(words[words.length - 1])
-      ? words.slice(0, -1).join(" ")
-      : "";
-    return [work.id, { root, sequelRoot }];
-  }));
-  const significantWord = (word) => word.length >= 4 && !["about", "after", "before", "from", "into", "over", "that", "with"].includes(word);
-  for (let first = 0; first < movieWorks.length; first++) {
-    const firstId = movieWorks[first].id;
-    const firstWords = titleWords.get(firstId);
-    for (let second = first + 1; second < movieWorks.length; second++) {
-      const secondId = movieWorks[second].id;
-      const secondWords = titleWords.get(secondId);
-      let commonWords = 0;
-      while (
-        commonWords < firstWords.length &&
-        commonWords < secondWords.length &&
-        firstWords[commonWords] === secondWords[commonWords]
-      ) commonWords++;
-      const commonPrefix = firstWords.slice(0, commonWords);
-      const firstRoot = titleRoots.get(firstId);
-      const secondRoot = titleRoots.get(secondId);
-      const matchingTitleRoot = (
-        firstRoot.root === secondRoot.root ||
-        (firstRoot.sequelRoot && firstRoot.sequelRoot === secondRoot.sequelRoot)
-      ) && firstRoot.root.split(/\s+/).some(significantWord);
-      if (matchingTitleRoot || (commonPrefix.length >= 2 && commonPrefix.some(significantWord))) {
-        const firstCollection = collectionByMovieId?.get(firstId)?.id || movieWorks[first].collectionId;
-        const secondCollection = collectionByMovieId?.get(secondId)?.id || movieWorks[second].collectionId;
-        if (!firstCollection && !secondCollection) {
-          const firstParent = findParent(firstId);
-          const secondParent = findParent(secondId);
-          parentById.set(secondParent, firstParent);
-        }
-      }
-    }
-  }
-  const titleFranchiseByRoot = new Map();
-  for (const work of movieWorks) {
-    const root = findParent(work.id);
-    if (root !== work.id) titleFranchiseByRoot.set(root, `title:${root}`);
-  }
 
   // Ignore TV series below the actor's cinema mean so TV never drags consistency down.
   const cinemaWorks = allWorks.filter((w) => (w.media_type || "movie") === "movie");
@@ -224,11 +177,30 @@ export function quality(valid, qualityOptions = {}) {
     }
     const colEntry = credit.collectionId || collectionByMovieId?.get(credit.id) || credit.belongs_to_collection || null;
     const colId = typeof colEntry === "object" ? colEntry?.id : colEntry;
-    const fallbackRoot = credit.media_type === "movie" ? findParent(credit.id) : null;
+    const fallbackRoot = credit.media_type === "movie"
+      ? getFranchiseKey(credit.title, credit.original_title)
+      : "";
     const franchiseId = colId
       ? `collection:${colId}`
-      : titleFranchiseByRoot.get(fallbackRoot) || null;
+      : fallbackRoot ? `title:${fallbackRoot}` : null;
     eligibleWorks.push({ credit, rating: b, franchiseId });
+  }
+
+  const franchiseGroups = new Map();
+  for (const work of eligibleWorks) {
+    if (!work.franchiseId) continue;
+    if (!franchiseGroups.has(work.franchiseId)) franchiseGroups.set(work.franchiseId, []);
+    franchiseGroups.get(work.franchiseId).push(work);
+  }
+  for (const group of franchiseGroups.values()) {
+    group.sort((a, b) => b.rating - a.rating);
+    group.forEach((work, index) => {
+      work.franchiseWeight = index === 0 ? 1
+        : index === 1 ? 0.60
+          : index === 2 ? 0.40
+            : index === 3 ? 0.25
+              : 0.15;
+    });
   }
 
   // 2. Selected works count
@@ -249,7 +221,7 @@ export function quality(valid, qualityOptions = {}) {
   }
 
   // 3. Weighting
-  const ranked = eligibleWorks.map(({ credit, rating: workRating, franchiseId }) => {
+  const ranked = eligibleWorks.map(({ credit, rating: workRating, franchiseId, franchiseWeight }) => {
     let finalWeight;
     if (credit.media_type === "tv" && typeof credit.tvWeight === "number") {
       finalWeight = credit.tvWeight;
@@ -268,38 +240,12 @@ export function quality(valid, qualityOptions = {}) {
       name.toLowerCase().trim() === credit.title.toLowerCase().trim())) {
       finalWeight *= Cfg.AWARD_MOVIE_MULTIPLIER;
     }
-    return { rating: workRating, roleWeight: finalWeight, franchiseId };
-  }).sort((a, b) => (b.rating * b.roleWeight) - (a.rating * a.roleWeight));
-  const topFive = [];
-  const topFiveFranchises = new Set();
-  const remaining = [];
-  for (const work of ranked) {
-    if (
-      topFive.length < 5 &&
-      work.franchiseId &&
-      topFiveFranchises.has(work.franchiseId)
-    ) {
-      remaining.push(work);
-      continue;
-    }
-    if (topFive.length < 5) {
-      topFive.push(work);
-      if (work.franchiseId) topFiveFranchises.add(work.franchiseId);
-    } else {
-      remaining.push(work);
-    }
-  }
-  const selected = [...topFive, ...remaining].slice(0, selectedCount);
-  const franchiseAppearances = new Map();
-  const rankedSelected = selected.map((work) => {
-    if (!work.franchiseId) return { ...work, franchiseWeight: 1 };
-    const appearance = (franchiseAppearances.get(work.franchiseId) || 0) + 1;
-    franchiseAppearances.set(work.franchiseId, appearance);
-    return {
-      ...work,
-      franchiseWeight: appearance === 1 ? 1 : appearance === 2 ? 0.5 : 0.25
-    };
-  });
+    return { rating: workRating, roleWeight: finalWeight, franchiseWeight: franchiseWeight || 1, franchiseId };
+  }).sort((a, b) =>
+    (b.rating * b.roleWeight * b.franchiseWeight) -
+    (a.rating * a.roleWeight * a.franchiseWeight)
+  );
+  const rankedSelected = ranked.slice(0, selectedCount);
 
   const n = rankedSelected.reduce((sum, item) => sum + item.roleWeight * item.franchiseWeight, 0);
   const q = n
@@ -641,7 +587,17 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
   const awardsStatus = Array.isArray(awardsInput)
     ? "available"
     : (awardsInput.status || (awardsAvailable ? "available" : "unavailable"));
-  const valid = validCredits(credits);
+  const rawValid = validCredits(credits);
+  const enrichedMovies = Array.isArray(qualityOptions.allWorks)
+    ? new Map(qualityOptions.allWorks
+      .filter((work) => (work.media_type || "movie") === "movie")
+      .map((work) => [work.id, work]))
+    : null;
+  const valid = enrichedMovies
+    ? rawValid
+      .filter((credit) => enrichedMovies.has(credit.id))
+      .map((credit) => ({ ...credit, ...enrichedMovies.get(credit.id) }))
+    : rawValid;
   const [awardsValue, notable, awardCount, ignoredAwards] = awardsScore(awards);
   const awardMovieNames = [...new Set(awards
     .filter((award) => award.kind === "won" && award.work)
@@ -709,8 +665,6 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
   const score = cineResult
     ? Math.max(cineResult.score, combinedResult.score)
     : combinedResult.score;
-  const career = historicalCareerBonus(valid);
-  const finalScore = clamp(score + career.bonus);
 
   const leads = [...allWorks]
     .filter((credit) => credit.media_type === "tv" ? (credit.tvWeight || 0) >= 0.50 : credit.order <= Cfg.TOP_LEAD_MAX_ORDER)
@@ -728,10 +682,7 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
     name: person.name,
     profile: person.profile_path || null,
     summary: cleanSummary,
-    score: finalScore,
-    career_span: career.careerSpan,
-    career_highlight_decades: career.decades,
-    historical_career_bonus: career.bonus,
+    score,
     scoring_version: Cfg.SCORING_VERSION,
     pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) =>
       [key, value === null ? null : value])),
@@ -757,6 +708,11 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
       media_type: credit.media_type || "movie",
       ...(credit.media_type === "tv" && credit.participationPct != null ? { participation_pct: credit.participationPct } : {}),
       rating: Math.round(credit.vote_average * 10) / 10,
+      tmdb_rating: Number(credit.vote_average) || 0,
+      tmdb_votes: Number(credit.vote_count) || 0,
+      imdb_rating: Number(credit.imdb_rating) || null,
+      imdb_votes: Number(credit.imdb_votes) || 0,
+      final_rating: Math.round(rating(credit) * 10) / 10,
       year: (credit.release_date || "").slice(0, 4)
     }))
   };
