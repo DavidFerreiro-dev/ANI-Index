@@ -113,22 +113,15 @@ export function getImdbRating(tconst) {
   return inMemoryRatings[tconst] || null;
 }
 
-/**
- * Computes combined Bayesian rating (60% IMDb / 40% TMDb)
- * Bayesian formula: (v / (v + 200)) * rating + (200 / (v + 200)) * 6.5
- */
-export function computeCombinedBayes(tmdbRating, tmdbVotes, imdbRating, imdbVotes) {
-  const m = 200;
-  const C = 6.5;
-
-  const bayesTmdb = (tmdbVotes / (tmdbVotes + m)) * tmdbRating + (m / (tmdbVotes + m)) * C;
-
-  if (imdbRating && imdbVotes && imdbVotes >= 10) {
-    const bayesImdb = (imdbVotes / (imdbVotes + m)) * imdbRating + (m / (imdbVotes + m)) * C;
-    return (0.6 * bayesImdb) + (0.4 * bayesTmdb);
+/** Combines IMDb and TMDb ratings directly without vote-volume smoothing. */
+export function computeCombinedRating(tmdbRating, imdbRating) {
+  const tmdb = Number(tmdbRating);
+  const imdb = Number(imdbRating);
+  const validTmdb = Number.isFinite(tmdb) && tmdb > 0 ? tmdb : 0;
+  const validImdb = Number.isFinite(imdb) && imdb > 0 ? imdb : 0;
+  if (validImdb > 0) {
+    return (0.6 * validImdb) + (0.4 * validTmdb);
   }
-
-  // Fallback 100% TMDb if IMDb is not available
-  return bayesTmdb;
+  return validTmdb;
 }
 

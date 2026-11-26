@@ -444,7 +444,7 @@
     <div class="pkg-group">
       <div class="pkg-title">net.estudiosriva.ani.actors.v26</div>
       <a href="#actors-spec" class="nav-link"><span>ActorScoringV26</span><span class="tag tag-v26">v26</span></a>
-      <a href="#actors-bayes" class="nav-link"><span>DualBayesian6040</span><span class="tag tag-v26">60/40</span></a>
+      <a href="#actors-bayes" class="nav-link"><span>DirectRatingBlend</span><span class="tag tag-v26">60/40</span></a>
       <a href="#actors-quality" class="nav-link"><span>FilmographyQuality</span><span class="tag tag-v26">40%</span></a>
       <a href="#actors-tv" class="nav-link"><span>TvSeriesRulesV26</span><span class="tag tag-v26">TV</span></a>
       <a href="#actors-pillars" class="nav-link"><span>AwardsCommercialSentiment</span><span class="tag tag-v26">60%</span></a>
@@ -531,7 +531,7 @@
     <section id="core-tmdb">
       <h3>Capa en Tiempo Real de TMDb y Respaldo</h3>
       <p>
-        La capa de TMDb actúa simultáneamente como fuente de metadatos visuales/estructurales y como <strong>respaldo inmediato en tiempo real</strong>: si un estreno reciente de cine o televisión todavía no alcanza los 300 votos o no figura en el corte diario de las 05:00 UTC de IMDb, el motor aplica automáticamente <code>100% Bayes_TMDb</code> sin bloquear el cálculo.
+        La capa de TMDb actúa simultáneamente como fuente de metadatos visuales/estructurales y como <strong>respaldo inmediato en tiempo real</strong>: si un estreno reciente de cine o televisión todavía no figura en el corte diario de las 05:00 UTC de IMDb, el motor usa el rating de TMDb al 100%. Los umbrales de votos solo determinan elegibilidad; no suavizan ratings.
       </p>
       <ul>
         <li>Películas: <code>/person/{id}/movie_credits</code> + <code>/movie/{id}</code> (incluye <code>imdb_id</code>, <code>revenue</code>, <code>budget</code>, <code>belongs_to_collection</code>).</li>
@@ -548,9 +548,9 @@
         <table>
           <thead><tr><th>Faceta</th><th>Prefijo / Clave de Caché</th><th>Endpoint Serverless</th><th>Versión Activa</th></tr></thead>
           <tbody>
-            <tr><td><strong>Actors</strong></td><td><code>actor-merit-ranker:actor:{id}</code></td><td><code>/api/actors/{id}</code></td><td><code>"26"</code></td></tr>
-            <tr><td><strong>Directors</strong></td><td><code>actor-merit-ranker:director:{id}</code></td><td><code>/api/directors/{id}</code></td><td><code>"Director Scoring version 5"</code></td></tr>
-            <tr><td><strong>Global Purger</strong></td><td><code>ani_algo_version</code></td><td><code>purgeStaleAniCache()</code></td><td><code>"actors-v26_directors-v5"</code></td></tr>
+            <tr><td><strong>Actors</strong></td><td><code>actor-merit-ranker:actor:{id}</code></td><td><code>/api/actors/{id}</code></td><td><code>26.4</code></td></tr>
+            <tr><td><strong>Directors</strong></td><td><code>actor-merit-ranker:director:{id}</code></td><td><code>/api/directors/{id}</code></td><td><code>"Director Scoring version 5.1"</code></td></tr>
+            <tr><td><strong>Global Purger</strong></td><td><code>ani_algo_version</code></td><td><code>purgeStaleAniCache()</code></td><td><code>"actors-v26.4_directors-v5.1"</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -588,7 +588,7 @@
         <table>
           <thead><tr><th>Pilar</th><th>Peso Base</th><th>Mecanismo Principal</th></tr></thead>
           <tbody>
-            <tr><td><strong>Filmography Quality</strong></td><td><code>40%</code></td><td>Ventana deslizante (6–8 obras, máx. 2/saga) sobre Bayes dual 60/40 IMDb+TMDb, multiplicadores de director/premio y calibración de carrera corta.</td></tr>
+            <tr><td><strong>Filmography Quality</strong></td><td><code>40%</code></td><td>Ventana deslizante (6–8 obras), una entrega por saga en el Top 5 y peso 0.5× / 0.25× para las siguientes; ratings directos 60/40 IMDb+TMDb.</td></tr>
             <tr><td><strong>Awards Prestige</strong></td><td><code>30%</code></td><td>Oscars, BAFTA, Cannes, Venecia, Berlín, Globos de Oro, SAG y Emmys (0.60× para TV), con freno asimétrico umbralado a 18 pts.</td></tr>
             <tr><td><strong>Commercial Impact</strong></td><td><code>10%</code></td><td>Top 5 estrenos post-1980 (90% recaudación logarítmica ajustada por década + 10% ROI acotado 0.5×–10×, máx. 1/saga).</td></tr>
             <tr><td><strong>Critical Sentiment</strong></td><td><code>10%</code></td><td>Análisis VADER sobre frases de reseñas que mencionan al actor o personaje (tope 89 si faltan reseñas).</td></tr>
@@ -599,21 +599,22 @@
     </section>
 
     <section id="actors-bayes">
-      <h3>Ponderación Dual 60% IMDb / 40% TMDb y Calibración Bayesiana</h3>
-      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>Bayes(v, r) = (v / (v + 200)) * r + (200 / (v + 200)) * 6.5
+      <h3>Ponderación Directa (60/40 Cine · 75/25 TV), sin Suavizado por Votos</h3>
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>imdbWeight = (media_type === "tv") ? 0.75 : 0.60
+Rating_Final = (r_imdb &gt; 0)
+  ? imdbWeight * r_imdb + (1 - imdbWeight) * r_tmdb
+  : r_tmdb
 
-Bayes_Final = (r_imdb &gt; 0 &amp;&amp; v_imdb &gt;= 10)
-  ? 0.60 * Bayes(v_imdb, r_imdb) + 0.40 * Bayes(v_tmdb, r_tmdb)
-  : Bayes(v_tmdb, r_tmdb)</div>
+// Los votos solo aplican filtros de elegibilidad; no modifican el rating.</div>
       <p>
-        Parámetros globales: media a priori <code>C = 6.5</code>, umbral de amortiguación <code>m = 200</code>, mínimo de votos TMDb <code>VOTING_THRESHOLD = 50</code>.
+        Mínimo de votos TMDb en cine <code>VOTING_THRESHOLD = 50</code> (relajado en TV a <code>TMDb &gt;= 25 || IMDb &gt;= 500</code>); estos umbrales no aplican curvas ni priors al score.
       </p>
     </section>
 
     <section id="actors-quality">
       <h3>Calidad de Filmografía (40%)</h3>
       <p>
-        Sobre todas las obras válidas (cine + series), se limita a un máximo de <strong>2 obras por franquicia/colección</strong> (<code>belongs_to_collection</code>), seleccionando las de mayor Bayes. El tamaño de la ventana deslizante <code>selectedCount</code> depende de <code>workCount</code>:
+        Las películas se agrupan con <code>belongs_to_collection.id</code> y, si falta, por raíz común del título. En el Top 5 de calidad solo entra <strong>1 película por franquicia</strong>; las entregas posteriores pueden aportar consistencia con peso 0.5× para la segunda y 0.25× desde la tercera. El tamaño de ventana <code>selectedCount</code> depende de <code>workCount</code>:
       </p>
       <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>if (workCount ∈ [3, 10])     → selectedCount = min(5, eligible.length)          // Carrera corta
 else if (workCount &lt;= 6)     → selectedCount = eligible.length
@@ -625,18 +626,19 @@ else                         → round(6 + ((workCount - 6) * 2) / 8)
 // Carrera corta (3-10 obras): order 0: 1.35 | order 1: 1.05 | order 2: 0.65 | order 3-5: 0.15 | minor: 0.05
 // Multiplicadores: +1.25× si director curado de prestigio | +1.15× si obra premiada en Wikidata
 
-q = Σ(roleWeight * bayesian) / Σ(roleWeight)
+q = Σ(roleWeight * franchiseWeight * directRating) / Σ(roleWeight * franchiseWeight)
 Normalización: [6.0 → 25, midpoint (6.5 | 6.40) → 55, max (7.8 | 7.45) → 100]</div>
+      <p class="note">Bonus de trayectoria histórica, aplicado al resultado final tras <code>max(scoreBaseCine, scoreConSeries)</code>: +1.0 con span de 15–19 años y destacados en 2 décadas; +2.5 con 20–29 años y 3 décadas; +3.5 con 30+ años y 4+ décadas. Destacado = rating directo ≥ 7.3 y billing order ≤ 2.</p>
     </section>
 
     <section id="actors-tv">
-      <h3>Reglas de Inclusión de Series y Miniseries (<code>Actors v26</code>)</h3>
+      <h3>Reglas de Inclusión de Series, Tramos por Episodios y No Penalización (<code>Actors v26.4</code>)</h3>
       <ul>
-        <li><strong>Tipos admitidos:</strong> <code>tvSeries</code> y <code>tvMiniSeries</code> procedentes de <code>/person/{id}/tv_credits</code>.</li>
-        <li><strong>Umbral de episodios:</strong> <code>episode_count &gt;= 3</code>. Elimina cameos de 1–2 episodios como estrella invitada manteniendo protagonistas, recurrentes y miniseries.</li>
-        <li><strong>Billing order basado en episodios (TV):</strong> En series y miniseries, el peso de protagonismo se calcula comparando los episodios en los que aparece el actor frente al total de episodios de la obra (<code>number_of_episodes</code>): si participa en todos los episodios (o <code>&gt;= 85%</code>) cuenta como protagonista completo (<code>order = 0</code>); <code>&gt;= 50% → order 1</code>; <code>&gt;= 25% → order 2</code>; <code>&lt; 25% (mín. 3 ep) → order 3</code>.</li>
-        <li><strong>Exclusiones estrictas (v26.2):</strong> Géneros TMDb <code>99</code> (Documentary), <code>10763</code> (News), <code>10764</code> (Reality), <code>10767</code> (Talk Show), <code>10770</code> (TV Movie); créditos no ficticios donde <code>character</code> empiece por <code>Self</code>, <code>Himself</code>, <code>Herself</code>, <code>Themselves</code>, <code>Narrator</code>, <code>Host</code>, <code>Guest</code>, <code>Contestant</code> o contenga <code>archive footage</code> / <code>(voice)</code>; eventos de lucha libre y MMA (<code>WWE</code>, <code>WWF</code>, <code>WrestleMania</code>, <code>Royal Rumble</code>, <code>UFC</code>, etc.); recopilatorios y títulos con <code>vote_count &lt; 50</code>.</li>
-        <li><strong>Efecto bidireccional:</strong> Las series válidas entran siempre en el cómputo, tanto si elevan como si reducen la media del actor.</li>
+        <li><strong>Tipos admitidos y votos mínimos:</strong> <code>tvSeries</code> y <code>tvMiniSeries</code> con <code>TMDb votes &gt;= 25</code> o <code>IMDb votes &gt;= 500</code>, resolviendo obligatoriamente <code>external_ids.imdb_id</code> para cruzar con IMDb al <strong>75 % IMDb / 25 % TMDb</strong>.</li>
+        <li><strong>Porcentaje de participación (excluyendo temporada 0 de especiales):</strong> <code>participacion = (episode_count / regular_episodes) * 100</code>.</li>
+        <li><strong>Tramos de peso:</strong> <code>&lt; 35%</code> descartada · <code>35–49% → 0.35</code> · <code>50–74% → 0.50</code> · <code>75–89% → 0.75</code> · <code>90–100% → 1.00</code> (papel protagonista pleno).</li>
+        <li><strong>Regla de No Penalización:</strong> Se calcula <code>scoreBaseCine</code> (solo películas) y <code>scoreConSeries</code> (cine + series), estableciendo <code>score = max(scoreBaseCine, scoreConSeries)</code>. Además, las series cuya nota directa sea inferior a la media cinematográfica del actor se ignoran en consistencia.</li>
+        <li><strong>Exclusiones estrictas:</strong> Géneros TMDb <code>99</code> (Documentary), <code>10763</code> (News), <code>10764</code> (Reality), <code>10767</code> (Talk Show), <code>10770</code> (TV Movie); créditos no ficticios donde <code>character</code> empiece por <code>Self</code>, <code>Himself</code>, <code>Herself</code>, <code>Themselves</code>, <code>Narrator</code>, <code>Host</code>, <code>Guest</code>, <code>Contestant</code> o contenga <code>archive footage</code> / <code>(voice)</code>; eventos de lucha libre y MMA (<code>WWE</code>, <code>WWF</code>, <code>WrestleMania</code>, <code>Royal Rumble</code>, <code>UFC</code>, etc.); recopilatorios y títulos sin votos suficientes.</li>
       </ul>
     </section>
 
@@ -670,7 +672,7 @@ else {
         <table>
           <thead><tr><th>Pilar</th><th>Peso</th><th>Composición</th></tr></thead>
           <tbody>
-            <tr><td><strong>Filmography Quality &amp; Consistency</strong></td><td><code>40%</code></td><td>70% Peak (Top 4 obras, máx. 1 por franquicia/serie) + 30% Consistencia (ventana 6–12, máx. 2 por franquicia).</td></tr>
+            <tr><td><strong>Filmography Quality &amp; Consistency</strong></td><td><code>40%</code></td><td>70% Peak (Top 4 obras, máx. 1 por franquicia/serie) + 30% Consistencia (ventana 6–12, máx. 2 por franquicia), ratings directos 60/40.</td></tr>
             <tr><td><strong>Awards &amp; Festivals Prestige</strong></td><td><code>25%</code></td><td>Tier S (25/9), Tier A (12/5), Tier B (7/3) sobre dirección, mejor película/serie y guion.</td></tr>
             <tr><td><strong>Commercial Impact</strong></td><td><code>15%</code></td><td>Top 3 largometrajes post-1980 (70% log gross + 30% ROI, 1.10× bonus original standalone).</td></tr>
             <tr><td><strong>Authorship &amp; Versatility</strong></td><td><code>10%</code></td><td>75% Versatilidad de géneros (≥6.5) + 25% Índice de autoría (créditos Writer/Screenplay/Story).</td></tr>
@@ -682,9 +684,10 @@ else {
 
     <section id="directors-quality">
       <h3>Peak (70%) + Consistencia (30%) y Compresión Élite</h3>
-      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>PeakScore = mean(Top 4 Bayes_Final, max 1 obra por franquicia o serie)
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>Rating_Final = 0.60 * IMDb + 0.40 * TMDb (rating directo; sin suavizado por votos)
+PeakScore = mean(Top 4 Rating_Final, max 1 obra por franquicia o serie)
 ConsistencyCount = clamp(round(6 + ((eligible.length - 6) / 24) * 6), 6, 12)
-ConsistencyScore = mean(Top ConsistencyCount Bayes_Final, max 2 por franquicia)
+ConsistencyScore = mean(Top ConsistencyCount Rating_Final, max 2 por franquicia)
 
 Quality = 0.70 * clamp(((PeakScore - 6.0) / 2.35) * 100)
         + 0.30 * clamp(((ConsistencyScore - 6.0) / 2.35) * 100)
@@ -723,7 +726,8 @@ PillarScore      = clamp(0.75 * GenreVersatility + 0.25 * AuthorshipIndex)</div>
         <table>
           <thead><tr><th>Rango ANI</th><th>Insignia / Nivel</th><th>Color</th><th>Criterio de Clasificación</th></tr></thead>
           <tbody>
-            <tr><td><code>90 – 100</code></td><td><strong>Diamond (Élite Histórica)</strong></td><td>Cian / Diamante</td><td>Excelencia sostenida en todos los pilares activos, prestigio S/A y legado canónico.</td></tr>
+            <tr><td><code>93 – 100</code></td><td><strong>Pure Diamond (Élite Histórica)</strong></td><td>Cian cristalino / forma ◆</td><td>Excelencia sostenida en todos los pilares activos, prestigio S/A y legado canónico.</td></tr>
+            <tr><td><code>90 – 92</code></td><td><strong>Pseudodiamante</strong></td><td>Cian hielo / círculo</td><td>Nivel intermedio con paleta cristalina, conservando la geometría circular estándar.</td></tr>
             <tr><td><code>80 – 89</code></td><td><strong>Gold</strong></td><td>Dorado</td><td>Trayectorias de primer nivel mundial con alto reconocimiento crítico y premios mayores.</td></tr>
             <tr><td><code>60 – 79</code></td><td><strong>Silver</strong></td><td>Plateado</td><td>Carreras sólidas, consistentes y referentes comerciales o de género.</td></tr>
             <tr><td><code>40 – 59</code></td><td><strong>Bronze</strong></td><td>Bronce</td><td>Filmografías mixtas, irregulares o en fase temprana de consolidación.</td></tr>
@@ -739,8 +743,8 @@ PillarScore      = clamp(0.75 * GenreVersatility + 0.25 * AuthorshipIndex)</div>
         <table>
           <thead><tr><th>Versión</th><th>Ámbito</th><th>Hitos Principales</th></tr></thead>
           <tbody>
-            <tr><td><strong>Actors v26 · Directors v5</strong></td><td>Actual</td><td>Integración completa de <code>tvSeries</code> y <code>tvMiniSeries</code> (<code>ep &gt;= 3</code> actores, <code>ep &gt;= 2</code> / <code>&gt;= 1</code> miniseries directores), exclusiones no ficticias en IMDb y TMDb, ficha <code>/tv/:id</code>, invalidación de caché y portal <code>/docs</code>.</td></tr>
-            <tr><td><strong>Actors v25 · Directors v4</strong></td><td>Anterior</td><td>Ponderación dual 60% IMDb / 40% TMDb, pipeline diario GitHub Actions + jsDelivr, ficha interactiva <code>/movie/:id</code>.</td></tr>
+            <tr><td><strong>Actors v26.4 · Directors v5.1</strong></td><td>Actual</td><td>Ratings IMDb/TMDb directos, sin suavizado por volumen de votos; control de sagas, bonus histórico por décadas, pseudodiamante 90–92, diamante puro ≥ 93 e invalidación de caché.</td></tr>
+            <tr><td><strong>Actors v25 · Directors v4</strong></td><td>Anterior</td><td>Ponderación dual directa 60% IMDb / 40% TMDb, pipeline diario GitHub Actions + jsDelivr, ficha interactiva <code>/movie/:id</code>.</td></tr>
             <tr><td><strong>Actors v24 · Directors v4</strong></td><td>Base matemática</td><td>Congelación de ventana deslizante (6–8), freno asimétrico umbralado a 18 pts, compresión élite &gt; 88 en directores y embeds <code>&lt;iframe&gt;</code>.</td></tr>
           </tbody>
         </table>

@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import { person, movieCredits, tvCredits, externalIds, reviews, movieDirectors, movieDetails, tvDetails } from "./tmdb.mjs";
+import { person, movieCredits, tvCredits, externalIds, reviews, movieDirectors, movieDetails, tvDetails, tvExternalIds } from "./tmdb.mjs";
 import { fetchAwards } from "./wikidata.mjs";
 import { getBackendImdbRatings } from "./imdb.mjs";
-import { compute, reviewMovies, validCredits, validWorks } from "./scoring.mjs";
+import { compute, reviewMovies, validCredits, validWorks, tvParticipationWeight } from "./scoring.mjs";
 
 function prestigeDirectorIds() {
   try {
@@ -76,34 +76,25 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
     }
   });
   const tvTotalEpisodesById = new Map();
-  tvDetailsList.forEach((details, index) => {
+  await Promise.all(tvDetailsList.map(async (details, index) => {
     const series = tvWorks[index];
-    const imdbId = details?.external_ids?.imdb_id;
-    if (imdbId) imdbIdByWorkKey.set(`tv:${series.id}`, imdbId);
-    if (details?.number_of_episodes) {
-      tvTotalEpisodesById.set(series.id, Number(details.number_of_episodes));
+    let imdbId = details?.external_ids?.imdb_id;
+    if (!imdbId) {
+      const ext = await tvExternalIds(series.id);
+      imdbId = ext?.imdb_id || null;
     }
-  });
+    if (imdbId) imdbIdByWorkKey.set(`tv:${series.id}`, imdbId);
+    const regularSeasons = (details?.seasons || []).filter((s) => Number(s.season_number) > 0);
+    const totalRegularEpisodes = regularSeasons.length
+      ? regularSeasons.reduce((sum, s) => sum + (Number(s.episode_count) || 0), 0)
+      : (Number(details?.number_of_episodes) || 0);
+    if (totalRegularEpisodes > 0) {
+      tvTotalEpisodesById.set(series.id, totalRegularEpisodes);
+    }
+  }));
+  const filteredWorks = [];
   allWorks.forEach((work) => {
     const mediaType = work.media_type || "movie";
-    if (mediaType === "movie") {
-      const col = collectionByMovieId.get(work.id);
-      if (col) {
-        work.collectionId = col.id;
-        work.collectionName = col.name;
-      }
-    } else if (mediaType === "tv") {
-      const totalEps = tvTotalEpisodesById.get(work.id) || 0;
-      const epCount = Number(work.episode_count) || 0;
-      work.number_of_episodes = totalEps;
-      if (totalEps > 0) {
-        const ratio = epCount / totalEps;
-        work.order = (epCount >= totalEps || ratio >= 0.85) ? 0
-          : ratio >= 0.50 ? 1
-          : ratio >= 0.25 ? 2
-          : 3;
-      }
-    }
     const imdbId = imdbIdByWorkKey.get(`${mediaType}:${work.id}`);
     if (imdbId) {
       work.imdb_id = imdbId;
@@ -112,6 +103,29 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
         work.imdb_rating = entry[0];
         work.imdb_votes = entry[1];
       }
+    }
+    if (mediaType === "movie") {
+      const col = collectionByMovieId.get(work.id);
+      if (col) {
+        work.collectionId = col.id;
+        work.collectionName = col.name;
+      }
+      filteredWorks.push(work);
+    } else if (mediaType === "tv") {
+      const tmdbVotes = Number(work.vote_count) || 0;
+      const imdbVotes = Number(work.imdb_votes) || 0;
+      if (tmdbVotes < 25 && imdbVotes < 500) return;
+
+      const totalEps = tvTotalEpisodesById.get(work.id) || 0;
+      const epCount = Number(work.episode_count) || 0;
+      work.number_of_episodes = totalEps;
+      const { pct, weight: tvWeight } = tvParticipationWeight(epCount, totalEps);
+      if (tvWeight <= 0) return;
+
+      work.tvWeight = tvWeight;
+      work.participationPct = Math.round(pct);
+      work.order = tvWeight >= 1.00 ? 0 : tvWeight >= 0.75 ? 1 : tvWeight >= 0.50 ? 2 : 3;
+      filteredWorks.push(work);
     }
   });
   const commercialEntries = commercialDetails.map((details, index) => {
@@ -171,7 +185,7 @@ export async function qualityContext(personId, credits, tv = [], imdbRatings = {
     ).length,
     commercialExcluded,
     collectionByMovieId,
-    allWorks
+    allWorks: filteredWorks
   };
 }
 

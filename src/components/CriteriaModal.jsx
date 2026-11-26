@@ -3,9 +3,8 @@ import { X, Award, Film, DollarSign, MessageSquare, Compass, BookOpen, Layers } 
 import ScoreBadge from "./ScoreBadge.jsx";
 
 const FALLBACK = {
-  SCORING_VERSION: "26.2",
+  SCORING_VERSION: "26.4",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
-  BAYESIAN: { C: 6.5, m: 200, shrinkageK: 3 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
   FILMOGRAPHY_WORKS: { few: 6, many: 14 },
   DIRECTOR_MULTIPLIER: 1.25,
@@ -18,7 +17,8 @@ const LEGEND = [
   [50, "40–59 Bronze"],
   [70, "60–79 Silver"],
   [85, "80–89 Gold"],
-  [100, "90–100 Diamond"]
+  [91, "90–92 Pseudodiamond"],
+  [96, "93–100 Diamond"]
 ];
 
 export default function CriteriaModal({ onClose, mode = "Actors" }) {
@@ -66,7 +66,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 5 evaluates feature films, TV series, and miniseries under a unified <strong>60% IMDb / 40% TMDb</strong> dual-source Bayesian engine across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 5 evaluates feature films, TV series, and miniseries using a direct <strong>60% IMDb / 40% TMDb</strong> rating blend, without vote-volume smoothing, across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
             </div>
 
             {/* Pillar Breakdown Table */}
@@ -136,14 +136,14 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
               </h3>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 <li><strong>Eligibility:</strong> Feature films directed by the person with runtime ≥ 60 minutes, status Released, excluding adult, video, and documentaries (genre 99). Minimum 3 valid feature films required to rank.</li>
-                <li><strong>Bayesian Prior per movie:</strong> <code className="text-sky-300 font-mono">Bayes = (v / (v + 200)) × vote_average + (200 / (v + 200)) × 6.5</code>, dampening small vote samples.</li>
-                <li><strong>Peak / Techo (60% of pillar):</strong> Calculated from the director's <strong>Top 4 valid features</strong>, capped at a strict <strong>maximum of 1 film per franchise/saga</strong> (choosing the highest-rated entry).</li>
+                <li><strong>Direct Rating per movie:</strong> <code className="text-sky-300 font-mono">0.60 × IMDb rating + 0.40 × TMDb rating</code>, with TMDb-only fallback when IMDb is unavailable; vote counts do not smooth either rating.</li>
+                <li><strong>Peak / Techo (70% of pillar):</strong> Calculated from the director's <strong>Top 4 valid features</strong>, capped at a strict <strong>maximum of 1 film per franchise/saga</strong> (choosing the highest-rated entry).</li>
                 <li><strong>Consistency (30% of pillar):</strong> Calculated over a <strong>capped 6–12 film sliding window</strong> that scales with career length, capped at a maximum of <strong>2 films per franchise/saga</strong>.</li>
                 <li><strong>Hardened Normalization (divisor 2.35):</strong>
                   <div className="my-1.5 rounded-lg bg-card/60 p-2 font-mono text-xs text-sky-200">
-                    Normalized = clamp(((Bayes - 6.0) / 2.35) × 100)
+                    Normalized = clamp(((DirectRating - 6.0) / 2.35) × 100)
                   </div>
-                  Pillar Score = <code className="text-sky-300 font-mono">0.60 × PeakNormalized + 0.40 × ConsistencyNormalized</code>. This calibration ensures all-time directing peaks hover in the realistic 93–95 range (e.g., Miyazaki 94, Tarantino 93).
+                  Pillar Score = <code className="text-sky-300 font-mono">0.70 × PeakNormalized + 0.30 × ConsistencyNormalized</code>. This calibration ensures all-time directing peaks hover in the realistic 93–95 range (e.g., Miyazaki 94, Tarantino 93).
                 </li>
               </ul>
             </div>
@@ -215,7 +215,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
             <div className="rounded-xl border border-line/70 bg-card/40 p-4 text-xs sm:text-sm space-y-1.5">
               <div className="font-bold text-white">TV Series, Miniseries &amp; Dual-Source Blending (v5)</div>
               <ul className="list-disc space-y-1 pl-5 text-slate-300">
-                <li><strong>60% IMDb / 40% TMDb:</strong> Each eligible film, TV series, and miniseries blends Bayesian priors from IMDb (60%) and TMDb (40%), falling back automatically to 100% TMDb when a new release has not yet reached the daily IMDb dataset threshold.</li>
+                <li><strong>60% IMDb / 40% TMDb:</strong> Each eligible film, TV series, and miniseries blends raw ratings directly (no vote-volume smoothing), falling back automatically to 100% TMDb when IMDb is unavailable.</li>
                 <li><strong>Episode Thresholds:</strong> Regular TV series require <code className="text-sky-300 font-mono">episode_count ≥ 2</code> directed; miniseries (<code className="text-sky-300 font-mono">type === "Miniseries"</code>) require <code className="text-sky-300 font-mono">episode_count ≥ 1</code>.</li>
                 <li><strong>Franchise / Series Cap:</strong> All directed episodes of the same TV series are grouped under a single series identity so one show cannot monopolize the Top 4 Peak or Consistency window.</li>
                 <li><strong>Non-Fictional Exclusions:</strong> Documentary (<code className="text-sky-300 font-mono">99</code>), News (<code className="text-sky-300 font-mono">10763</code>), Reality (<code className="text-sky-300 font-mono">10764</code>), Talk Show (<code className="text-sky-300 font-mono">10767</code>), Game-Show, and standalone episodes (<code className="text-sky-300 font-mono">tvEpisode</code>) are strictly excluded.</li>
@@ -233,15 +233,17 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 26 evaluates acting careers across cinema, TV series, and miniseries under a unified <strong>60% IMDb / 40% TMDb</strong> Bayesian engine: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 26 evaluates acting careers across cinema, TV series, and miniseries using direct IMDb/TMDb ratings without vote-volume smoothing: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
             </div>
 
-            {/* TV & Hybrid Source Rules (v26) */}
+            {/* TV & Hybrid Source Rules (v26.4) */}
             <div className="rounded-xl border border-line/70 bg-card/40 p-4 text-xs sm:text-sm space-y-1.5">
-              <div className="font-bold text-white">TV Series, Miniseries &amp; Dual-Source Blending (v26)</div>
+              <div className="font-bold text-white">TV Series, Miniseries &amp; Direct Rating Blending (v26.4)</div>
               <ul className="list-disc space-y-1 pl-5 text-slate-300">
-                <li><strong>60% IMDb / 40% TMDb:</strong> Film and TV works blend IMDb (60%) and TMDb (40%) Bayesian priors (<code className="text-sky-300 font-mono">C = 6.5, m = 200</code>), with instant 100% TMDb fallback for brand-new releases.</li>
-                <li><strong>TV Episode Threshold:</strong> Series (<code className="text-sky-300 font-mono">tvSeries</code> / <code className="text-sky-300 font-mono">tvMiniSeries</code>) require <code className="text-sky-300 font-mono">episode_count ≥ 3</code> to prevent 1-episode guest cameos from distorting career metrics while capturing lead, recurring, and miniseries roles.</li>
+                <li><strong>Source Weighting:</strong> Films blend <strong>60% IMDb / 40% TMDb</strong>; TV series &amp; miniseries blend <strong>75% IMDb / 25% TMDb</strong> directly, with instant 100% TMDb fallback when IMDb data is unavailable. Vote counts do not smooth ratings.</li>
+                <li><strong>Relaxed TV Vote Threshold:</strong> TV series qualify with <code className="text-sky-300 font-mono">TMDb votes ≥ 25</code> or <code className="text-sky-300 font-mono">IMDb votes ≥ 500</code> so prestige cable/indie series are never dropped.</li>
+                <li><strong>Episode Participation Brackets (excluding Season 0 specials):</strong> <code className="text-sky-300 font-mono">&lt; 35%</code> discarded · <code className="text-sky-300 font-mono">35–49% → 0.35</code> · <code className="text-sky-300 font-mono">50–74% → 0.50</code> · <code className="text-sky-300 font-mono">75–89% → 0.75</code> · <code className="text-sky-300 font-mono">90–100% → 1.00</code> (full lead weight).</li>
+                <li><strong>Non-Penalization Rule:</strong> Final score is <code className="text-sky-300 font-mono">max(scoreBaseCine, scoreConSeries)</code>, and TV series below the actor's cinema mean rating are ignored in consistency so TV can only boost or preserve the film score.</li>
                 <li><strong>Strict Exclusions:</strong> Documentary (<code className="text-sky-300 font-mono">99</code>), News (<code className="text-sky-300 font-mono">10763</code>), Reality (<code className="text-sky-300 font-mono">10764</code>), Talk Show (<code className="text-sky-300 font-mono">10767</code>), Game-Show, TV Movie (<code className="text-sky-300 font-mono">10770</code>), voice-only roles, <code className="text-sky-300 font-mono">tvEpisode</code>, non-fictional credits (<code className="text-sky-300 font-mono">Self/Himself/Herself/Narrator/Host/Guest/Contestant</code>), and wrestling/MMA events (WWE, UFC, WrestleMania, etc.) are discarded.</li>
               </ul>
             </div>
@@ -260,7 +262,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                   <tr>
                     <td className="p-3 font-semibold text-white">Filmography Quality</td>
                     <td className="p-3 font-bold text-sky-300">40%</td>
-                    <td className="p-3">Continuous sliding window (6 to 8 works, max 2/saga); short career dampening (top 5, 1.35× Lead weight)</td>
+                    <td className="p-3">Sliding window (6–8 works); one franchise entry in the Top 5, then 0.5× for the second and 0.25× from the third; short-career lead weighting</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-semibold text-white">Awards Prestige</td>
@@ -314,7 +316,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
               </h3>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 <li><strong>Eligibility:</strong> Released movies and series with at least {config.VOTING_THRESHOLD} votes. Documentaries (genre 99), TV movies, self appearances, archive footage, and voice roles are strictly excluded.</li>
-                <li><strong>Franchise Cap:</strong> Maximum <strong>2 films per franchise/saga</strong> (<code className="text-sky-300 font-mono">belongs_to_collection</code>) are considered (selecting the two highest-rated entries), preventing franchise repetitions from dominating career evaluation.</li>
+                <li><strong>Franchise handling:</strong> Group films by TMDb <code className="text-sky-300 font-mono">belongs_to_collection.id</code>, with title-root matching as fallback. Only <strong>one entry per franchise</strong> may occupy the Top 5; later eligible entries remain in consistency at <strong>0.5× for the second</strong> and <strong>0.25× from the third</strong>.</li>
                 <li><strong>Continuous Sliding Window:</strong>
                   <ul className="list-circle pl-5 mt-1 space-y-0.5">
                     <li>If career has ≤ 6 valid works: all eligible works are evaluated.</li>
@@ -323,7 +325,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                   </ul>
                 </li>
                 <li><strong>Short Careers (3–10 works):</strong> Evaluates top 5 works with customized role weights (Lead 0: 1.35, Order 1: 1.05, Order 2: 0.65, Orders 3–5: 0.15, minor: 0.05) and softer volume calibration (midpoint 6.40, ceiling 7.45) to fairly reflect breakout performers without artificial inflation.</li>
-                <li><strong>Bayesian Rating per work:</strong> <code className="text-sky-300 font-mono">Bayes = (v / (v + 200)) × vote_average + (200 / (v + 200)) × 6.5</code>.</li>
+                <li><strong>Direct Rating per work:</strong> <code className="text-sky-300 font-mono">0.60 × IMDb + 0.40 × TMDb</code> for films and <code className="text-sky-300 font-mono">0.75 × IMDb + 0.25 × TMDb</code> for TV, using TMDb alone if IMDb is unavailable. No vote-volume smoothing is applied.</li>
                 <li><strong>Statistical Multipliers:</strong>
                   <ul className="list-circle pl-5 mt-1 space-y-0.5">
                     <li>Prestige Director Multiplier: <strong>1.25×</strong> if directed by any auteur in the curated prestige director index (unless the actor is also the director).</li>
@@ -338,6 +340,10 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
                   </div>
                 </li>
               </ul>
+            </div>
+
+            <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm">
+              <strong className="text-sky-300">Historical Career Bonus:</strong> Adds up to 3.5 points after the cinema/TV non-penalization rule. Active span is measured between the first and last valid film, and highlighted films (rating ≥ 7.3, billing order ≤ 2) must cover 2, 3, or 4 decades for +1.0 (15–19 years), +2.5 (20–29 years), or +3.5 (30+ years), respectively.
             </div>
 
             {/* 3. Awards Prestige */}
@@ -441,7 +447,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
             ))}
           </div>
           <p className="mt-3 text-xs text-slate-400">
-            <strong>Diamond (90–100):</strong> Generational benchmark requiring excellence across all active pillars. <strong>Gold (80–89):</strong> World-class elite careers. <strong>Silver (60–79):</strong> Solid professional careers and box office anchors. <strong>Bronze (40–59):</strong> Mixed filmographies or early career phases.
+            <strong>Pure Diamond (93–100):</strong> reserved for the highest tier and shown with the crystalline diamond shape. <strong>Pseudodiamond (90–92):</strong> circular badge in the ice-cyan diamond palette. <strong>Gold (80–89):</strong> World-class elite careers. <strong>Silver (60–79):</strong> Solid professional careers and box office anchors. <strong>Bronze (40–59):</strong> Mixed filmographies or early career phases.
           </p>
         </div>
 

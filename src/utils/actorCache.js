@@ -1,9 +1,9 @@
 const CACHE_PREFIX = "actor-merit-ranker:actor:";
 const DIRECTOR_CACHE_PREFIX = "actor-merit-ranker:director:";
 const DYNAMIC_ACTORS_KEY = "ani_dynamic_seeds";
-export const SCORING_VERSION = "26.2";
-export const DIRECTOR_SCORING_VERSION = "Director Scoring version 5";
-export const ANI_ALGO_VERSION = "actors-v26.2_directors-v5";
+export const SCORING_VERSION = "26.4";
+export const DIRECTOR_SCORING_VERSION = "Director Scoring version 5.1";
+export const ANI_ALGO_VERSION = "actors-v26.4_directors-v5.1";
 const ANI_ALGO_VERSION_KEY = "ani_algo_version";
 
 export function purgeStaleAniCache() {
@@ -22,16 +22,12 @@ export function purgeStaleAniCache() {
 
 export function isActorValid(actor) {
   if (!actor || typeof actor !== "object") return false;
-  return (
-    actor.scoring_version === SCORING_VERSION ||
-    actor.scoring_version === "v26.2"
-  );
+  return actor.scoring_version === SCORING_VERSION;
 }
 
 export function isDirectorValid(dir) {
   if (!dir || typeof dir !== "object") return false;
-  return dir.scoring_version === DIRECTOR_SCORING_VERSION ||
-    dir.scoring_version === "Director Scoring v5";
+  return dir.scoring_version === DIRECTOR_SCORING_VERSION;
 }
 
 export function getCachedActor(id) {

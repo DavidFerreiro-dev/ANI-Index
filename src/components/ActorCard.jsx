@@ -32,7 +32,12 @@ export default function ActorCard({ actor, onOpen, onOpenMovie, mode = "Actors",
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate text-slate-200">{m.title}</span>
                   {m.media_type === "tv" && (
-                    <span className="shrink-0 rounded bg-sky-500/15 border border-sky-500/30 px-1 py-0 text-[10px] font-bold text-sky-300">TV</span>
+                    <span
+                      className="shrink-0 rounded bg-sky-500/15 border border-sky-500/30 px-1 py-0 text-[10px] font-bold text-sky-300"
+                      title={m.participation_pct != null ? `${m.participation_pct}% de episodios` : "Serie de TV"}
+                    >
+                      TV{m.participation_pct != null ? ` ${m.participation_pct}%` : ""}
+                    </span>
                   )}
                 </span>
                 <span className="shrink-0 text-slate-400">{m.rating}</span>

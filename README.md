@@ -1,6 +1,6 @@
 # Actor & Director Merit Ranker — ANI Index
 
-Actor & Director Merit Ranker is a serverless web application that evaluates and ranks cinematic and television careers through the **ANI Index** (*Artistic & Narrative Index*). The system combines a daily **IMDb** dataset pipeline (GitHub Actions + jsDelivr CDN), real-time **TMDb** film & TV metadata, and **Wikidata** awards under a **60% IMDb / 40% TMDb** Bayesian model, serving precomputed seeds alongside `localStorage` caching and on-demand Netlify Functions.
+Actor & Director Merit Ranker is a serverless web application that evaluates and ranks cinematic and television careers through the **ANI Index** (*Artistic & Narrative Index*). The system combines a daily **IMDb** dataset pipeline (GitHub Actions + jsDelivr CDN), real-time **TMDb** film & TV metadata, and **Wikidata** awards with direct weighted ratings (60% IMDb / 40% TMDb for films and directors; 75% IMDb / 25% TMDb for actor TV), without vote-volume smoothing.
 
 > 📖 **Full Technical Documentation:** Available at [`/docs`](public/docs/index.html) (`public/docs/index.html`) — a self-contained Javadoc-style technical portal covering architecture, exact mathematical formulas, TV/film filters, and version history.
 
@@ -8,16 +8,18 @@ Actor & Director Merit Ranker is a serverless web application that evaluates and
 
 ## ANI Index Overview
 
-The **ANI Index (Artistic & Narrative Index)** measures sustained artistic merit, peer recognition, narrative versatility, and cultural impact across feature films, TV series, and miniseries while neutralizing franchise inflation and volume bias.
+The **ANI Index (Artistic & Narrative Index)** measures sustained artistic merit, peer recognition, narrative versatility, and cultural impact across feature films, TV series, and miniseries while limiting franchise repetition and avoiding vote-volume rating smoothing.
 
-### 1. ANI Index — Actors v26
+### 1. ANI Index — Actors v26.4
 
-The actor model synthesizes five weighted pillars across cinema and television (`tvSeries` / `tvMiniSeries` with `episode_count >= 3`, excluding Documentary `99`, News `10763`, Reality `10764`, Talk Show `10767`, Game-Show, and TV Movies `10770`):
+The actor model synthesizes five weighted pillars across cinema and television (`tvSeries` / `tvMiniSeries` evaluated by episode participation percentage excluding Season 0 specials: `< 35%` discarded, `35–49% → 0.35`, `50–74% → 0.50`, `75–89% → 0.75`, `90–100% → 1.00`; relaxed vote gate `TMDb ≥ 25` or `IMDb ≥ 500`; non-penalization floor `max(scoreBaseCine, scoreConSeries)`):
 
-- **Filmography Quality (40%):** Evaluates the actor's career using a **60% IMDb / 40% TMDb** dual Bayesian blend (`C = 6.5, m = 200`, 100% TMDb fallback for brand-new releases) and a continuous sliding window (6 to 8 works), capped at a maximum of **2 works per franchise/collection** (`belongs_to_collection`):
+- **Filmography Quality (40%):** Evaluates direct weighted ratings (**60% IMDb / 40% TMDb** for movies; **75% IMDb / 25% TMDb** for TV series, 100% TMDb fallback) on a continuous sliding window (6 to 8 works), without vote-volume smoothing:
+  - **Franchise control:** Groups collections by `belongs_to_collection.id`, with title-root matching as fallback. At most one installment per franchise can occupy the Top 5; later entries count toward consistency at 0.5× for the second and 0.25× from the third.
   - **Career Sliding Window:** Evaluates all eligible works for careers with $\le 6$ works, sliding up to 8 works for careers with $\ge 14$ works.
   - **Short Careers (3–10 works):** Evaluates top 5 works with customized role weights (Lead 0: 1.35, Order 1: 1.05, Order 2: 0.65, Orders 3–5: 0.15, minor: 0.05) and softer volume calibration (midpoint 6.40, ceiling 7.45) to fairly reflect breakout performers without artificial inflation.
   - **Statistical Multipliers:** 1.25× prestige director multiplier, 1.15× awarded film multiplier, and standard billing order weights.
+- **Historical Career Bonus:** Adds up to 3.5 points after the cinema/TV non-penalization rule for long careers with highlighted films (direct rating ≥ 7.3 and billing order ≤ 2) spanning multiple decades: +1.0 at 15–19 years / 2 decades, +2.5 at 20–29 years / 3 decades, and +3.5 at 30+ years / 4 decades.
 - **Awards Prestige (30%):** Weighted acting-specific honors:
   - **Tier S:** Academy Awards (Lead: 38 won / 10 nom; Supporting: 18 won / 6 nom) and festival/BAFTA honors (Lead: 24 won / 8 nom; Supporting: 11 won / 4.5 nom).
   - **Tier A:** Golden Globes, SAG, Critics Choice, and major industry guilds.
@@ -28,13 +30,19 @@ The actor model synthesizes five weighted pillars across cinema and television (
 - **Critical Sentiment (10%):** VADER polarity scores of TMDb user review sentences mentioning the actor or their characters, with cinema-specific terms (dark, brutal, haunting, etc.) neutralized.
 - **Genre Versatility (10%):** Counts distinct grouped genres across roles with billing order $\le 3$ and rating $\ge 6.5$.
 
+### ANI Badge Tiers
+
+- **Pure Diamond (93–100):** crystalline diamond-shaped badge.
+- **Pseudodiamond (90–92):** standard circular badge with the ice-cyan diamond palette.
+- **Gold (80–89):** standard circular badge with the usual gold palette.
+
 ### 2. ANI Index — Directors v5
 
-The director model evaluates five directing-specific pillars across feature films, TV series (`episode_count >= 2`), and miniseries (`episode_count >= 1`, `type === "Miniseries"`), using the **60% IMDb / 40% TMDb** Bayesian blend and grouping all episodes of a series as a single work:
+The director model evaluates five directing-specific pillars across feature films, TV series (`episode_count >= 2`), and miniseries (`episode_count >= 1`, `type === "Miniseries"`), using direct **60% IMDb / 40% TMDb** ratings without vote-volume smoothing and grouping all episodes of a series as a single work:
 
 - **Filmography Quality & Consistency (40%):**
-  - **Peak (70%):** Bayesian average of the director's Top 4 valid features, capped at a maximum of 1 film per franchise.
-  - **Consistency (30%):** Bayesian average of a capped 6–12 film sliding window, scaled with career length and capped at 2 films per franchise.
+  - **Peak (70%):** Weighted average of the director's Top 4 valid features, capped at a maximum of 1 film per franchise.
+  - **Consistency (30%):** Weighted average of a capped 6–12 film sliding window, scaled with career length and capped at 2 films per franchise.
   - Scores above 88 use a logarithmic upper-end compression, keeping elite careers in a finely differentiated 92–95.5 range.
   - Calibrated with a divisor of 2.35 to align top historical career peaks in the 93–95 range.
 - **Awards & Festivals Prestige (25%):** Best Director, Best Picture, and Screenplay honors across Tier S (Oscars, Cannes Palme d'Or, Venice Golden Lion, Berlin Golden Bear), Tier A (BAFTA, DGA, Golden Globes, César, Goya, major festival direction prizes), and Tier B (Spirit, Gotham, critics associations).
@@ -60,7 +68,7 @@ The director model evaluates five directing-specific pillars across feature film
   - `search.mjs` — Multi-entity search for actors and directors
 - `netlify/functions/lib/scoring.mjs` — Core actor scoring algorithms and mathematical formulas
 - `netlify/functions/lib/director.mjs` — Director evaluation formulas and pipeline
-- `netlify/functions/lib/imdb.mjs` — Backend IMDb dataset loader & 60/40 dual Bayesian helper
+- `netlify/functions/lib/imdb.mjs` — Backend IMDb dataset loader and direct weighted-rating helper
 - `netlify/functions/lib/scoring-config.mjs` — Centralized weights, curve parameters, and thresholds
 
 ### Embeddable actor and director views

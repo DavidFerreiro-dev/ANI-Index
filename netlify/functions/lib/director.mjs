@@ -3,15 +3,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { person, personCrewCredits, personTvCrewCredits, externalIds, movieDetails, movieCrew, tvDetails, tvCreditsByShow } from "./tmdb.mjs";
 import { fetchAwards } from "./wikidata.mjs";
-import { getBackendImdbRatings, computeDualBayes } from "./imdb.mjs";
+import { getBackendImdbRatings, computeDualRating } from "./imdb.mjs";
 
 const EXCLUDED_TV_GENRES = [99, 10763, 10764, 10767, 10770];
 const clamp = (value) => Math.max(0, Math.min(100, value));
-const bayes = (work) => computeDualBayes(
+const blendedRating = (work) => computeDualRating(
   work.vote_average,
-  work.vote_count,
-  work.imdb_rating,
-  work.imdb_votes
+  work.imdb_rating
 );
 
 const genreGroups = [
@@ -152,12 +150,12 @@ export async function buildDirector(id) {
     return entry ? { ...work, imdb_rating: entry[0], imdb_votes: entry[1] } : work;
   });
 
-  const validWithBayes = valid.map((movie) => ({ ...movie, bayesian: bayes(movie) }));
+  const validWithRatings = valid.map((movie) => ({ ...movie, rating: blendedRating(movie) }));
 
   // 1. Peak / Techo (Top 4 películas): máximo 1 película por franquicia
   const peakColGroups = new Map();
   const peakNonCol = [];
-  for (const movie of validWithBayes) {
+  for (const movie of validWithRatings) {
     const colId = movie.belongs_to_collection?.id;
     if (colId) {
       if (!peakColGroups.has(colId)) peakColGroups.set(colId, []);
@@ -168,17 +166,17 @@ export async function buildDirector(id) {
   }
   const peakEligible = [...peakNonCol];
   for (const [colId, group] of peakColGroups) {
-    group.sort((a, b) => b.bayesian - a.bayesian);
+    group.sort((a, b) => b.rating - a.rating);
     peakEligible.push(group[0]);
   }
-  peakEligible.sort((a, b) => b.bayesian - a.bayesian);
+  peakEligible.sort((a, b) => b.rating - a.rating);
   const peak = peakEligible.slice(0, 4);
-  const peakScore = peak.length ? peak.reduce((sum, movie) => sum + movie.bayesian, 0) / peak.length : 0;
+  const peakScore = peak.length ? peak.reduce((sum, movie) => sum + movie.rating, 0) / peak.length : 0;
 
   // 2. Filmografía general: máximo 2 por franquicia
   const genColGroups = new Map();
   const genNonCol = [];
-  for (const movie of validWithBayes) {
+  for (const movie of validWithRatings) {
     const colId = movie.belongs_to_collection?.id;
     if (colId) {
       if (!genColGroups.has(colId)) genColGroups.set(colId, []);
@@ -189,16 +187,16 @@ export async function buildDirector(id) {
   }
   const genEligible = [...genNonCol];
   for (const [colId, group] of genColGroups) {
-    group.sort((a, b) => b.bayesian - a.bayesian);
+    group.sort((a, b) => b.rating - a.rating);
     genEligible.push(...group.slice(0, 2));
   }
-  genEligible.sort((a, b) => b.bayesian - a.bayesian);
+  genEligible.sort((a, b) => b.rating - a.rating);
 
   // Consistency: smooth 6–12 feature sliding window, with franchise capping already applied.
   const consistencyCount = Math.max(6, Math.min(12, Math.round(6 + ((genEligible.length - 6) / 24) * 6)));
   const consistencyMovies = genEligible.slice(0, consistencyCount);
   const consistency = consistencyMovies.length
-    ? consistencyMovies.reduce((sum, movie) => sum + movie.bayesian, 0) / consistencyMovies.length
+    ? consistencyMovies.reduce((sum, movie) => sum + movie.rating, 0) / consistencyMovies.length
     : 0;
 
   // 70/30 peak/consistency conversion, capped for very large career filmographies.
@@ -307,7 +305,7 @@ export async function buildDirector(id) {
     profile: personData.profile_path || null,
     summary: (personData.biography || "").replace(/\u00a0/g, " ").normalize("NFKC").trim().slice(0, 320),
     score,
-    scoring_version: "Director Scoring version 5",
+    scoring_version: "Director Scoring version 5.1",
     mode: "Directors",
     pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) => [key, value])),
     valid_work_count: valid.length,

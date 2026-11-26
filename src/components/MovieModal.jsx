@@ -227,10 +227,13 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
   const imdbScore = rawImdbRating ? Number(rawImdbRating).toFixed(1) : null;
   const imdbVotes = rawImdbVotes  ? Number(rawImdbVotes).toLocaleString() : null;
 
-  // Weighted Combined Score (60% IMDb / 40% TMDb)
+  // Weighted Combined Score (75% IMDb / 25% TMDb for TV; 60% IMDb / 40% TMDb for Movies)
+  const imdbWeight = isTv ? 0.75 : 0.6;
+  const tmdbWeight = 1 - imdbWeight;
+  const splitLabel = isTv ? "75/25" : "60/40";
   let combinedScore = null;
   if (rawImdbRating && movie.vote_average) {
-    combinedScore = (0.6 * Number(rawImdbRating) + 0.4 * Number(movie.vote_average)).toFixed(1);
+    combinedScore = (imdbWeight * Number(rawImdbRating) + tmdbWeight * Number(movie.vote_average)).toFixed(1);
   } else if (movie.vote_average) {
     combinedScore = Number(movie.vote_average).toFixed(1);
   }
@@ -341,7 +344,7 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
                     ratingTab === "both" ? "bg-sky-500 text-black shadow" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  Ambos (60/40)
+                  Ambos ({splitLabel})
                 </button>
                 <button
                   onClick={() => setRatingTab("imdb")}
@@ -368,14 +371,14 @@ export default function MovieModal({ movieId, mediaType = "movie", onClose, onSe
               {(ratingTab === "both" || ratingTab === "imdb") && combinedScore && (
                 <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-sky-300">Ponderada (60/40)</span>
+                    <span className="text-xs font-bold text-sky-300">Ponderada ({splitLabel})</span>
                     <Sparkles size={14} className="text-sky-400" />
                   </div>
                   <div className="mt-2 flex items-baseline gap-2">
                     <span className="text-2xl font-black text-white">{combinedScore}</span>
                     <span className="text-xs text-slate-400">/ 10</span>
                   </div>
-                  <span className="text-[11px] text-slate-400 mt-1">Calibración bayesiana dual</span>
+                  <span className="text-[11px] text-slate-400 mt-1">Rating directo IMDb/TMDb</span>
                 </div>
               )}
 

@@ -1,7 +1,6 @@
 export const SCORING_CONFIG = {
-  SCORING_VERSION: "26.2",
+  SCORING_VERSION: "26.4",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
-  BAYESIAN: { C: 6.5, m: 200, shrinkageK: 3 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
   FILMOGRAPHY_WORKS: { few: 6, many: 14 },
   CREDIT_WEIGHTS: { order0: 1.0, order1: 0.8, order2: 0.60, order3to5: 0.35, minor: 0.10 },

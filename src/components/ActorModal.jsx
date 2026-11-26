@@ -175,7 +175,12 @@ export default function ActorModal({ actor, onClose, onOpenMovie, isDetailed = f
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate font-medium text-slate-200">{m.title}{m.year && <span className="text-slate-500 text-xs"> ({m.year})</span>}</span>
                   {m.media_type === "tv" && (
-                    <span className="shrink-0 rounded bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[10px] font-bold text-sky-300">TV</span>
+                    <span
+                      className="shrink-0 rounded bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[10px] font-bold text-sky-300"
+                      title={m.participation_pct != null ? `${m.participation_pct}% de episodios` : "Serie de TV"}
+                    >
+                      TV{m.participation_pct != null ? ` ${m.participation_pct}%` : ""}
+                    </span>
                   )}
                 </span>
                 <span className="shrink-0 rounded bg-sky-950/70 border border-sky-800/40 px-2 py-0.5 text-xs font-bold text-sky-400">{m.rating}</span>
