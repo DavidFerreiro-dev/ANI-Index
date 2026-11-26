@@ -7,10 +7,12 @@ import {
   movieCredits,
   tvCredits,
   externalIds,
-  reviews
+  reviews,
+  searchPerson as tmdbSearchPerson
 } from "../netlify/functions/lib/tmdb.mjs";
 
 import { fetchAwards } from "../netlify/functions/lib/wikidata.mjs";
+import { getBackendImdbRatings } from "../netlify/functions/lib/imdb.mjs";
 import {
   compute,
   reviewMovies,
@@ -110,33 +112,14 @@ function drawProgress(completed, total, successful, failed, startTime) {
   );
 }
 
+let imdbRatingsCache = null;
+
 async function searchPerson(name) {
-  const url = new URL("https://api.themoviedb.org/3/search/person");
-  const key = process.env.TMDB_API_KEY;
-
-  const headers = {};
-
-  if (key?.split(".").length === 3) {
-    headers.Authorization = `Bearer ${key}`;
-  } else {
-    url.searchParams.set("api_key", key || "");
-  }
-
-  url.searchParams.set("query", name);
-  url.searchParams.set("include_adult", "false");
-
-  const response = await fetch(url, { headers });
-
-  if (!response.ok) {
-    throw new Error(`TMDb search failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
+  const results = await tmdbSearchPerson(name);
   return (
-    data.results?.find(
+    results?.find(
       (item) => item.known_for_department === "Acting"
-    ) || data.results?.[0]
+    ) || results?.[0]
   );
 }
 
@@ -182,6 +165,8 @@ async function buildOne(name) {
     const valid = validCredits(credits);
     const selectedMovies = reviewMovies(valid);
 
+    if (!imdbRatingsCache) imdbRatingsCache = await getBackendImdbRatings();
+
     // Reviews limitadas para evitar demasiadas peticiones simultáneas
     const [awards, reviewsByMovie, qualityOptions] = await Promise.all([
       fetchAwards(external.wikidata_id, {
@@ -195,7 +180,7 @@ async function buildOne(name) {
         (movie) => reviews(movie.id)
       ),
 
-      qualityContext(search.id, credits, tv)
+      qualityContext(search.id, credits, tv, imdbRatingsCache)
     ]);
 
     return compute(

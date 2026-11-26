@@ -1,5 +1,6 @@
 import { SentimentIntensityAnalyzer } from "vader-sentiment";
 import { SCORING_CONFIG as Cfg } from "./scoring-config.mjs";
+import { computeDualBayes } from "./imdb.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -17,6 +18,19 @@ export function clamp(value) {
   return Math.max(0, Math.min(100, value));
 }
 
+const NON_FICTION_CHARACTER_RE = /^(self|himself|herself|themselves|narrator|host|guest|contestant)\b/i;
+const WRESTLING_MMA_TITLE_RE = /\b(WWE|WWF|WCW|ECW|AEW|TNA|NXT|WrestleMania|Royal Rumble|SummerSlam|Survivor Series|Monday Night Raw|SmackDown|UFC|Bellator|Pride FC)\b/i;
+
+function isExcludedRoleOrEvent(character, title, originalTitle = "") {
+  if (!character) return true;
+  if (NON_FICTION_CHARACTER_RE.test(character)) return true;
+  if (/archive footage/i.test(character)) return true;
+  if (/\(voice\)/i.test(character)) return true;
+  if (/\b(trilogy|collection|anthology|saga|complete)\b/i.test(title)) return true;
+  if (WRESTLING_MMA_TITLE_RE.test(title) || (originalTitle && WRESTLING_MMA_TITLE_RE.test(originalTitle))) return true;
+  return false;
+}
+
 export function validCredits(credits) {
   const today = new Date().toISOString().slice(0, 10);
   return credits
@@ -25,10 +39,8 @@ export function validCredits(credits) {
       const releaseDate = (credit.release_date || "").trim();
       const genres = credit.genre_ids || [];
       const title = (credit.title || "").trim();
-      return character &&
-        !/\b(self|himself|herself|archive footage)\b/i.test(character) &&
-        !/\(voice\)/i.test(character) &&
-        !/\b(trilogy|collection|anthology|saga|complete)\b/i.test(title) &&
+      const originalTitle = (credit.original_title || "").trim();
+      return !isExcludedRoleOrEvent(character, title, originalTitle) &&
         !genres.includes(10770) &&
         !genres.some((genre) => Cfg.EXCLUDED_GENRES.includes(genre)) &&
         (credit.vote_count || 0) >= Cfg.VOTING_THRESHOLD &&
@@ -45,29 +57,35 @@ export function validWorks(movieCredits, tvCredits) {
     media_type: "movie"
   }));
   const today = new Date().toISOString().slice(0, 10);
+  const excludedTv = Cfg.EXCLUDED_TV_GENRES || [99, 10763, 10764, 10767, 10770];
   const series = (tvCredits || [])
     .filter((credit) => {
       const character = (credit.character || "").trim();
       const releaseDate = (credit.first_air_date || "").trim();
       const genres = credit.genre_ids || [];
       const title = (credit.name || "").trim();
-      return character &&
-        !/\b(self|himself|herself|archive footage)\b/i.test(character) &&
-        !/\(voice\)/i.test(character) &&
-        !/\b(trilogy|collection|anthology|saga|complete)\b/i.test(title) &&
-        !genres.includes(10770) &&
-        !genres.includes(99) &&
+      const originalTitle = (credit.original_name || "").trim();
+      const epCount = Number(credit.episode_count) || 0;
+      return epCount >= 3 &&
+        !isExcludedRoleOrEvent(character, title, originalTitle) &&
+        !genres.some((genre) => excludedTv.includes(genre)) &&
         (credit.vote_count || 0) >= Cfg.VOTING_THRESHOLD &&
         releaseDate.length >= 10 &&
         releaseDate <= today;
     })
-    .map((credit) => ({
-      ...credit,
-      title: credit.name || "",
-      release_date: credit.first_air_date || "",
-      order: credit.order ?? 99,
-      media_type: "tv"
-    }));
+    .map((credit) => {
+      const epCount = Number(credit.episode_count) || 0;
+      const derivedOrder = credit.order != null
+        ? credit.order
+        : epCount >= 8 ? 0 : epCount >= 4 ? 1 : 2;
+      return {
+        ...credit,
+        title: credit.name || "",
+        release_date: credit.first_air_date || "",
+        order: derivedOrder,
+        media_type: "tv"
+      };
+    });
   const works = new Map();
   for (const work of [...movies, ...series]) {
     const key = `${work.media_type}:${work.id}`;
@@ -85,9 +103,12 @@ export function weight(order) {
 }
 
 export function bayes(credit) {
-  const votes = credit.vote_count;
-  return (votes / (votes + Cfg.BAYESIAN.m)) * credit.vote_average +
-    (Cfg.BAYESIAN.m / (votes + Cfg.BAYESIAN.m)) * Cfg.BAYESIAN.C;
+  return computeDualBayes(
+    credit.vote_average,
+    credit.vote_count,
+    credit.imdb_rating,
+    credit.imdb_votes
+  );
 }
 
 export function quality(valid, qualityOptions = {}) {
@@ -530,7 +551,7 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
   const pillars = {
     quality: quality(valid, qualityOptions),
     awards: awardsValue,
-    versatility: versatility(valid),
+    versatility: versatility(allWorks),
     sentiment: sentimentValue,
     commercial: commercialValueWithFallback
   };
@@ -553,7 +574,7 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
   if (missingBasePillars >= 1 && missingBasePillars <= 2)
     score = Math.min(score, Cfg.SENTIMENT.missingPillarCap);
   score = Math.min(score, Cfg.QUALITY.finalScoreCap);
-  const leads = [...valid].filter((credit) => credit.order <= Cfg.TOP_LEAD_MAX_ORDER)
+  const leads = [...allWorks].filter((credit) => credit.order <= Cfg.TOP_LEAD_MAX_ORDER)
     .sort((a, b) => b.vote_average - a.vote_average);
   const curatedNotes = loadCuratedNotes();
   const curated = curatedNotes[String(person.id)] || curatedNotes[person.name] || null;
@@ -591,6 +612,7 @@ export function compute(person, credits, awardsInput = [], reviewsByMovie = [], 
     leads: leads.slice(0, 6).map((credit) => ({
       id: credit.id,
       title: credit.title,
+      media_type: credit.media_type || "movie",
       rating: Math.round(credit.vote_average * 10) / 10,
       year: (credit.release_date || "").slice(0, 4)
     }))

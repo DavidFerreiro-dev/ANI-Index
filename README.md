@@ -1,18 +1,20 @@
 # Actor & Director Merit Ranker — ANI Index
 
-Actor & Director Merit Ranker is a serverless web application that evaluates and ranks cinematic careers through the **ANI Index** (*Artistic & Narrative Index*). The system integrates data from TMDb (filmographies, box office, cast/crew, and review sentiment) and Wikidata (awards and nominations), serving precomputed seeds alongside instant client-side caching (`localStorage`) and on-demand Netlify Functions.
+Actor & Director Merit Ranker is a serverless web application that evaluates and ranks cinematic and television careers through the **ANI Index** (*Artistic & Narrative Index*). The system combines a daily **IMDb** dataset pipeline (GitHub Actions + jsDelivr CDN), real-time **TMDb** film & TV metadata, and **Wikidata** awards under a **60% IMDb / 40% TMDb** Bayesian model, serving precomputed seeds alongside `localStorage` caching and on-demand Netlify Functions.
+
+> 📖 **Full Technical Documentation:** Available at [`/docs`](public/docs/index.html) (`public/docs/index.html`) — a self-contained Javadoc-style technical portal covering architecture, exact mathematical formulas, TV/film filters, and version history.
 
 ---
 
 ## ANI Index Overview
 
-The **ANI Index (Artistic & Narrative Index)** is an algorithmic multi-pillar evaluation system designed to measure sustained artistic merit, peer recognition, narrative versatility, and cultural impact while neutralizing franchise inflation and volume bias.
+The **ANI Index (Artistic & Narrative Index)** measures sustained artistic merit, peer recognition, narrative versatility, and cultural impact across feature films, TV series, and miniseries while neutralizing franchise inflation and volume bias.
 
-### 1. ANI Index — Actors v24
+### 1. ANI Index — Actors v26
 
-The actor model synthesizes five weighted pillars:
+The actor model synthesizes five weighted pillars across cinema and television (`tvSeries` / `tvMiniSeries` with `episode_count >= 3`, excluding Documentary `99`, News `10763`, Reality `10764`, Talk Show `10767`, Game-Show, and TV Movies `10770`):
 
-- **Filmography Quality (40%):** Evaluates the actor's career using a continuous sliding window (6 to 8 works), capped at a maximum of **2 films per franchise/collection** (`belongs_to_collection`):
+- **Filmography Quality (40%):** Evaluates the actor's career using a **60% IMDb / 40% TMDb** dual Bayesian blend (`C = 6.5, m = 200`, 100% TMDb fallback for brand-new releases) and a continuous sliding window (6 to 8 works), capped at a maximum of **2 works per franchise/collection** (`belongs_to_collection`):
   - **Career Sliding Window:** Evaluates all eligible works for careers with $\le 6$ works, sliding up to 8 works for careers with $\ge 14$ works.
   - **Short Careers (3–10 works):** Evaluates top 5 works with customized role weights (Lead 0: 1.35, Order 1: 1.05, Order 2: 0.65, Orders 3–5: 0.15, minor: 0.05) and softer volume calibration (midpoint 6.40, ceiling 7.45) to fairly reflect breakout performers without artificial inflation.
   - **Statistical Multipliers:** 1.25× prestige director multiplier, 1.15× awarded film multiplier, and standard billing order weights.
@@ -26,9 +28,9 @@ The actor model synthesizes five weighted pillars:
 - **Critical Sentiment (10%):** VADER polarity scores of TMDb user review sentences mentioning the actor or their characters, with cinema-specific terms (dark, brutal, haunting, etc.) neutralized.
 - **Genre Versatility (10%):** Counts distinct grouped genres across roles with billing order $\le 3$ and rating $\ge 6.5$.
 
-### 2. ANI Index — Directors v4
+### 2. ANI Index — Directors v5
 
-The director model evaluates five directing-specific pillars:
+The director model evaluates five directing-specific pillars across feature films, TV series (`episode_count >= 2`), and miniseries (`episode_count >= 1`, `type === "Miniseries"`), using the **60% IMDb / 40% TMDb** Bayesian blend and grouping all episodes of a series as a single work:
 
 - **Filmography Quality & Consistency (40%):**
   - **Peak (70%):** Bayesian average of the director's Top 4 valid features, capped at a maximum of 1 film per franchise.
@@ -44,15 +46,21 @@ The director model evaluates five directing-specific pillars:
 
 ## Architecture
 
-- `src/` — React 18, Tailwind CSS, Lucide icons, responsive modals, and search components
-- `public/seed-actors.json` — Precomputed instant seed for 100 benchmark actors under `Actors v24`
-- `public/seed-directors.json` — Precomputed instant seed for 123 benchmark directors under `Directors v4`
+- `src/` — React 18, Tailwind CSS, Lucide icons, responsive modals (`/movie/:id` & `/tv/:id`), and search components
+- `public/docs/index.html` — Self-contained Javadoc-style technical documentation portal served at `/docs`
+- `public/seed-actors.json` — Precomputed instant seed for benchmark actors (`Actors v26`)
+- `public/seed-directors.json` — Precomputed instant seed for benchmark directors (`Directors v5`)
+- `.github/workflows/update-imdb-ratings.yml` & `scripts/build-imdb-json.mjs` — Daily `05:00 UTC` GitHub Actions pipeline filtering `title.ratings.tsv.gz` + `title.basics.tsv.gz` (`movie`, `tvSeries`, `tvMiniSeries`, `numVotes >= 300`, excluding non-fiction) to the `data` branch for jsDelivr CDN distribution
 - `netlify/functions/` — Serverless functions:
-  - `actors.mjs` — TMDb and Wikidata scoring pipeline for actors
-  - `directors.mjs` — Directing career builder and scoring pipeline
+  - `actors.mjs` — TMDb (`movie_credits` + `tv_credits`), IMDb & Wikidata scoring pipeline for actors (`v26`)
+  - `directors.mjs` — Directing career builder & scoring pipeline (`v5`)
+  - `movie.mjs` / `movies.mjs` — Movie detail endpoint (`/api/movies/:id`)
+  - `tv.mjs` — TV series & miniseries detail endpoint (`/api/tv/:id`)
+  - `imdb-reviews.mjs` — IMDb public reviews scraper
   - `search.mjs` — Multi-entity search for actors and directors
 - `netlify/functions/lib/scoring.mjs` — Core actor scoring algorithms and mathematical formulas
 - `netlify/functions/lib/director.mjs` — Director evaluation formulas and pipeline
+- `netlify/functions/lib/imdb.mjs` — Backend IMDb dataset loader & 60/40 dual Bayesian helper
 - `netlify/functions/lib/scoring-config.mjs` — Centralized weights, curve parameters, and thresholds
 
 ### Embeddable actor and director views

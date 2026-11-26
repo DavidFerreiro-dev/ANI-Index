@@ -165,14 +165,19 @@ export default function ActorModal({ actor, onClose, onOpenMovie, isDetailed = f
         <h3 className="mt-7 sm:mt-8 text-base sm:text-lg font-bold text-white">Top lead roles</h3>
         <ul className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
           {(actor.leads || []).map((m) => (
-            <li key={m.id}>
+            <li key={`${m.media_type || "movie"}-${m.id}`}>
               <button
                 type="button"
-                onClick={() => onOpenMovie?.(m.id, m.title)}
+                onClick={() => onOpenMovie?.(m.id, m.title, m.media_type || "movie")}
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-line/60 bg-card/40 px-3.5 py-2.5 text-left text-sm transition hover:border-sky-500/50 hover:bg-card/70 focus:outline-none focus:ring-2 focus:ring-sky-400/70"
                 title={`View ${m.title} cast and ratings`}
               >
-                <span className="truncate font-medium text-slate-200">{m.title}{m.year && <span className="text-slate-500 text-xs"> ({m.year})</span>}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium text-slate-200">{m.title}{m.year && <span className="text-slate-500 text-xs"> ({m.year})</span>}</span>
+                  {m.media_type === "tv" && (
+                    <span className="shrink-0 rounded bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[10px] font-bold text-sky-300">TV</span>
+                  )}
+                </span>
                 <span className="shrink-0 rounded bg-sky-950/70 border border-sky-800/40 px-2 py-0.5 text-xs font-bold text-sky-400">{m.rating}</span>
               </button>
             </li>

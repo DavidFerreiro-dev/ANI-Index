@@ -1,17 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { person, personCrewCredits, externalIds, movieDetails, movieCrew } from "./tmdb.mjs";
+import { person, personCrewCredits, personTvCrewCredits, externalIds, movieDetails, movieCrew, tvDetails, tvCreditsByShow } from "./tmdb.mjs";
 import { fetchAwards } from "./wikidata.mjs";
+import { getBackendImdbRatings, computeDualBayes } from "./imdb.mjs";
 
-const C = 6.5;
-const m = 200;
+const EXCLUDED_TV_GENRES = [99, 10763, 10764, 10767, 10770];
 const clamp = (value) => Math.max(0, Math.min(100, value));
-const bayes = (movie) => {
-  const votes = Number(movie.vote_count) || 0;
-  const rating = Number(movie.vote_average) || 0;
-  return (votes / (votes + m)) * rating + (m / (votes + m)) * C;
-};
+const bayes = (work) => computeDualBayes(
+  work.vote_average,
+  work.vote_count,
+  work.imdb_rating,
+  work.imdb_votes
+);
 
 const genreGroups = [
   [28, 12], [80, 53, 9648], [878, 14], [10749, 18],
@@ -80,8 +81,8 @@ export function directorAwardsScore(awards) {
 }
 
 export async function buildDirector(id) {
-  const [personData, credits, external] = await Promise.all([
-    person(id), personCrewCredits(id), externalIds(id)
+  const [personData, credits, tvCrewCredits, external, imdbRatings] = await Promise.all([
+    person(id), personCrewCredits(id), personTvCrewCredits(id), externalIds(id), getBackendImdbRatings()
   ]);
   const directedCredits = credits.filter((credit) => credit.job === "Director");
   const detailEntries = await Promise.all(directedCredits.map(async (credit) => {
@@ -89,13 +90,15 @@ export async function buildDirector(id) {
     if (!details) return null;
     return {
       ...details,
+      media_type: "movie",
+      imdb_id: details.imdb_id || null,
       crew,
       crew_order: credit.order,
       vote_count: details.vote_count ?? credit.vote_count ?? 0,
       vote_average: details.vote_average ?? credit.vote_average ?? 0
     };
   }));
-  const valid = detailEntries.filter((movie) =>
+  const validMovies = detailEntries.filter((movie) =>
     movie &&
     !movie.adult &&
     movie.video !== true &&
@@ -104,6 +107,50 @@ export async function buildDirector(id) {
     !(movie.genres || []).some((genre) => genre.id === 99) &&
     (movie.release_date || "").length >= 10
   );
+
+  // Directed TV series & miniseries (deduplicated per series ID)
+  const directedTvMap = new Map();
+  for (const credit of (tvCrewCredits || [])) {
+    if (credit.job !== "Director") continue;
+    if ((credit.genre_ids || []).some((gid) => EXCLUDED_TV_GENRES.includes(gid))) continue;
+    const prev = directedTvMap.get(credit.id);
+    if (!prev || (credit.episode_count || 0) > (prev.episode_count || 0)) {
+      directedTvMap.set(credit.id, credit);
+    }
+  }
+  const tvDetailEntries = await Promise.all([...directedTvMap.values()].map(async (credit) => {
+    const [details, tvCreds] = await Promise.all([tvDetails(credit.id), tvCreditsByShow(credit.id)]);
+    if (!details) return null;
+    const isMiniseries = details.type === "Miniseries";
+    const epCount = credit.episode_count ?? 0;
+    if (isMiniseries ? epCount < 1 : epCount < 2) return null;
+    if (details.adult) return null;
+    if (["Planned", "In Production", "Rumored"].includes(details.status)) return null;
+    if ((details.genres || []).some((genre) => EXCLUDED_TV_GENRES.includes(genre.id))) return null;
+    const voteCount = details.vote_count ?? credit.vote_count ?? 0;
+    if (voteCount < 50) return null;
+    const releaseDate = details.first_air_date || "";
+    if (releaseDate.length < 10) return null;
+    return {
+      ...details,
+      media_type: "tv",
+      title: details.name || credit.name || "",
+      release_date: releaseDate,
+      imdb_id: details.external_ids?.imdb_id || null,
+      belongs_to_collection: { id: `tv:${details.id}`, name: details.name || "" },
+      crew: tvCreds?.crew || [],
+      revenue: 0,
+      budget: 0,
+      vote_count: voteCount,
+      vote_average: details.vote_average ?? credit.vote_average ?? 0
+    };
+  }));
+  const validTv = tvDetailEntries.filter(Boolean);
+
+  const valid = [...validMovies, ...validTv].map((work) => {
+    const entry = work.imdb_id ? imdbRatings?.[work.imdb_id] : null;
+    return entry ? { ...work, imdb_rating: entry[0], imdb_votes: entry[1] } : work;
+  });
 
   const validWithBayes = valid.map((movie) => ({ ...movie, bayesian: bayes(movie) }));
 
@@ -260,7 +307,7 @@ export async function buildDirector(id) {
     profile: personData.profile_path || null,
     summary: (personData.biography || "").replace(/\u00a0/g, " ").normalize("NFKC").trim().slice(0, 320),
     score,
-    scoring_version: "Director Scoring version 4",
+    scoring_version: "Director Scoring version 5",
     mode: "Directors",
     pillars: Object.fromEntries(Object.entries(pillars).map(([key, value]) => [key, value])),
     valid_work_count: valid.length,
@@ -272,6 +319,7 @@ export async function buildDirector(id) {
     leads: [...valid].sort((a, b) => Number(b.vote_average) - Number(a.vote_average)).slice(0, 6).map((movie) => ({
       id: movie.id,
       title: movie.title,
+      media_type: movie.media_type || "movie",
       rating: Math.round(Number(movie.vote_average) * 10) / 10,
       year: (movie.release_date || "").slice(0, 4)
     }))

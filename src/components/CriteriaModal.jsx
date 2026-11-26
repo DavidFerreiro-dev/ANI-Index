@@ -3,7 +3,7 @@ import { X, Award, Film, DollarSign, MessageSquare, Compass, BookOpen, Layers } 
 import ScoreBadge from "./ScoreBadge.jsx";
 
 const FALLBACK = {
-  SCORING_VERSION: "24",
+  SCORING_VERSION: "26.2",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
   BAYESIAN: { C: 6.5, m: 200, shrinkageK: 3 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
@@ -52,21 +52,21 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
         <div className="mt-5 inline-flex max-w-full rounded-xl border border-line bg-card/60 p-1" role="tablist">
           <button role="tab" aria-selected={activeTab === "Actors"} onClick={() => setActiveTab("Actors")}
                   className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-bold transition ${activeTab === "Actors" ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>
-            ANI Index — Actors (v24)
+            ANI Index — Actors (v26)
           </button>
           <button role="tab" aria-selected={activeTab === "Directors"} onClick={() => setActiveTab("Directors")}
                   className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-bold transition ${activeTab === "Directors" ? "bg-sky-400 text-sky-950 shadow" : "text-slate-300 hover:text-white"}`}>
-            ANI Index — Directors (v4)
+            ANI Index — Directors (v5)
           </button>
         </div>
 
         {activeTab === "Directors" ? (
           /* ========================================================================= */
-          /*                           DIRECTORS CRITERIA (v4)                           */
+          /*                           DIRECTORS CRITERIA (v5)                           */
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 4 synthesizes directing careers across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Director Scoring version 5 evaluates feature films, TV series, and miniseries under a unified <strong>60% IMDb / 40% TMDb</strong> dual-source Bayesian engine across five pillars: Filmography Quality &amp; Consistency (40%), Awards &amp; Festivals Prestige (25%), Commercial Impact (15%), Authorship &amp; Versatility (10%), and Cultural Legacy (10%).
             </div>
 
             {/* Pillar Breakdown Table */}
@@ -211,15 +211,39 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
               </ul>
             </div>
 
-            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">ANI Index — Directors v4</p>
+            {/* TV & Hybrid Source Rules (v5) */}
+            <div className="rounded-xl border border-line/70 bg-card/40 p-4 text-xs sm:text-sm space-y-1.5">
+              <div className="font-bold text-white">TV Series, Miniseries &amp; Dual-Source Blending (v5)</div>
+              <ul className="list-disc space-y-1 pl-5 text-slate-300">
+                <li><strong>60% IMDb / 40% TMDb:</strong> Each eligible film, TV series, and miniseries blends Bayesian priors from IMDb (60%) and TMDb (40%), falling back automatically to 100% TMDb when a new release has not yet reached the daily IMDb dataset threshold.</li>
+                <li><strong>Episode Thresholds:</strong> Regular TV series require <code className="text-sky-300 font-mono">episode_count ≥ 2</code> directed; miniseries (<code className="text-sky-300 font-mono">type === "Miniseries"</code>) require <code className="text-sky-300 font-mono">episode_count ≥ 1</code>.</li>
+                <li><strong>Franchise / Series Cap:</strong> All directed episodes of the same TV series are grouped under a single series identity so one show cannot monopolize the Top 4 Peak or Consistency window.</li>
+                <li><strong>Non-Fictional Exclusions:</strong> Documentary (<code className="text-sky-300 font-mono">99</code>), News (<code className="text-sky-300 font-mono">10763</code>), Reality (<code className="text-sky-300 font-mono">10764</code>), Talk Show (<code className="text-sky-300 font-mono">10767</code>), Game-Show, and standalone episodes (<code className="text-sky-300 font-mono">tvEpisode</code>) are strictly excluded.</li>
+              </ul>
+            </div>
+
+            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500 flex items-center justify-between">
+              <span>ANI Index — Directors v5</span>
+              <a href="/docs" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">Full Technical Docs →</a>
+            </p>
           </div>
         ) : (
           /* ========================================================================= */
-          /*                              ACTORS CRITERIA (v24)                          */
+          /*                              ACTORS CRITERIA (v26)                          */
           /* ========================================================================= */
           <div className="mt-6 space-y-6">
             <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4 text-xs sm:text-sm text-sky-200">
-              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 24 evaluates acting careers across five pillars: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
+              <strong className="text-sky-300">Model Definition:</strong> Actor Scoring version 26 evaluates acting careers across cinema, TV series, and miniseries under a unified <strong>60% IMDb / 40% TMDb</strong> Bayesian engine: Filmography Quality (40%), Awards Prestige (30%), Commercial Impact (10%), Critical Sentiment (10%), and Genre Versatility (10%).
+            </div>
+
+            {/* TV & Hybrid Source Rules (v26) */}
+            <div className="rounded-xl border border-line/70 bg-card/40 p-4 text-xs sm:text-sm space-y-1.5">
+              <div className="font-bold text-white">TV Series, Miniseries &amp; Dual-Source Blending (v26)</div>
+              <ul className="list-disc space-y-1 pl-5 text-slate-300">
+                <li><strong>60% IMDb / 40% TMDb:</strong> Film and TV works blend IMDb (60%) and TMDb (40%) Bayesian priors (<code className="text-sky-300 font-mono">C = 6.5, m = 200</code>), with instant 100% TMDb fallback for brand-new releases.</li>
+                <li><strong>TV Episode Threshold:</strong> Series (<code className="text-sky-300 font-mono">tvSeries</code> / <code className="text-sky-300 font-mono">tvMiniSeries</code>) require <code className="text-sky-300 font-mono">episode_count ≥ 3</code> to prevent 1-episode guest cameos from distorting career metrics while capturing lead, recurring, and miniseries roles.</li>
+                <li><strong>Strict Exclusions:</strong> Documentary (<code className="text-sky-300 font-mono">99</code>), News (<code className="text-sky-300 font-mono">10763</code>), Reality (<code className="text-sky-300 font-mono">10764</code>), Talk Show (<code className="text-sky-300 font-mono">10767</code>), Game-Show, TV Movie (<code className="text-sky-300 font-mono">10770</code>), voice-only roles, <code className="text-sky-300 font-mono">tvEpisode</code>, non-fictional credits (<code className="text-sky-300 font-mono">Self/Himself/Herself/Narrator/Host/Guest/Contestant</code>), and wrestling/MMA events (WWE, UFC, WrestleMania, etc.) are discarded.</li>
+              </ul>
             </div>
 
             {/* Pillar Breakdown Table */}
@@ -398,7 +422,10 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
               </ul>
             </div>
 
-            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">ANI Index — Actors v{config.SCORING_VERSION}</p>
+            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500 flex items-center justify-between">
+              <span>ANI Index — Actors v{config.SCORING_VERSION}</span>
+              <a href="/docs" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">Full Technical Docs →</a>
+            </p>
           </div>
         )}
 
@@ -421,6 +448,7 @@ export default function CriteriaModal({ onClose, mode = "Actors" }) {
         {/* Sources & Disclaimers */}
         <div className="mt-6 border-t border-line pt-4 text-xs text-slate-500 space-y-1">
           <p>Filmographic, financial, and cast/crew metadata provided by <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">The Movie Database (TMDb)</a>. This product uses the TMDb API but is not endorsed or certified by TMDb.</p>
+          <p>Ratings and vote counts courtesy of <a href="https://www.imdb.com" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">IMDb</a> non-commercial datasets. Not affiliated with or endorsed by IMDb.com, Inc.</p>
           <p>Awards, nominations, and career honors aggregated from <a href="https://www.wikidata.org" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">Wikidata</a> under Creative Commons CC0.</p>
         </div>
       </div>

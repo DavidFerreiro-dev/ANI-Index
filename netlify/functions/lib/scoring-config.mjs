@@ -1,5 +1,5 @@
 export const SCORING_CONFIG = {
-  SCORING_VERSION: "24",
+  SCORING_VERSION: "26.2",
   WEIGHTS: { quality: 0.40, awards: 0.30, versatility: 0.10, sentiment: 0.10, commercial: 0.10 },
   BAYESIAN: { C: 6.5, m: 200, shrinkageK: 3 },
   QUALITY: { minimum: 6.0, maximum: 7.8, manyMaxWorks: 8, finalScoreCap: 100 },
@@ -62,5 +62,6 @@ export const SCORING_CONFIG = {
     { name: "Documentary", ids: [99] }
   ],
   EXCLUDED_GENRES: [99, 10770],
+  EXCLUDED_TV_GENRES: [99, 10763, 10764, 10767, 10770],
   VERSATILITY_MAX_GROUPS: 6
 };

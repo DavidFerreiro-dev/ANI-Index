@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { person, movieCredits, tvCredits, externalIds, reviews, movieDirectors, movieDetails } from "./tmdb.mjs";
+import { person, movieCredits, tvCredits, externalIds, reviews, movieDirectors, movieDetails, tvDetails } from "./tmdb.mjs";
 import { fetchAwards } from "./wikidata.mjs";
+import { getBackendImdbRatings } from "./imdb.mjs";
 import { compute, reviewMovies, validCredits, validWorks } from "./scoring.mjs";
 
 function prestigeDirectorIds() {
@@ -25,7 +26,7 @@ function sagaCollectionIds() {
   }
 }
 
-export async function qualityContext(personId, credits, tv = []) {
+export async function qualityContext(personId, credits, tv = [], imdbRatings = {}) {
   const valid = validCredits(credits);
   const allWorks = validWorks(credits, tv);
   const leadMovieCount = valid.filter((credit) => credit.order <= 2).length;
@@ -57,21 +58,60 @@ export async function qualityContext(personId, credits, tv = []) {
     const collectionId = details?.belongs_to_collection?.id;
     if (collectionId && sagaIds.has(collectionId)) sagaMovieIds.push(topMovies[index].id);
   });
-  const commercialDetails = await Promise.all(valid.map((movie) => movieDetails(movie.id)));
+  const tvWorks = allWorks.filter((work) => work.media_type === "tv");
+  const [commercialDetails, tvDetailsList] = await Promise.all([
+    Promise.all(valid.map((movie) => movieDetails(movie.id))),
+    Promise.all(tvWorks.map((series) => tvDetails(series.id)))
+  ]);
   const collectionByMovieId = new Map();
+  const imdbIdByWorkKey = new Map();
   commercialDetails.forEach((details, index) => {
+    const movie = valid[index];
+    if (details?.imdb_id) imdbIdByWorkKey.set(`movie:${movie.id}`, details.imdb_id);
     if (details?.belongs_to_collection?.id) {
-      collectionByMovieId.set(valid[index].id, {
+      collectionByMovieId.set(movie.id, {
         id: details.belongs_to_collection.id,
         name: details.belongs_to_collection.name
       });
     }
   });
+  const tvTotalEpisodesById = new Map();
+  tvDetailsList.forEach((details, index) => {
+    const series = tvWorks[index];
+    const imdbId = details?.external_ids?.imdb_id;
+    if (imdbId) imdbIdByWorkKey.set(`tv:${series.id}`, imdbId);
+    if (details?.number_of_episodes) {
+      tvTotalEpisodesById.set(series.id, Number(details.number_of_episodes));
+    }
+  });
   allWorks.forEach((work) => {
-    const col = collectionByMovieId.get(work.id);
-    if (col) {
-      work.collectionId = col.id;
-      work.collectionName = col.name;
+    const mediaType = work.media_type || "movie";
+    if (mediaType === "movie") {
+      const col = collectionByMovieId.get(work.id);
+      if (col) {
+        work.collectionId = col.id;
+        work.collectionName = col.name;
+      }
+    } else if (mediaType === "tv") {
+      const totalEps = tvTotalEpisodesById.get(work.id) || 0;
+      const epCount = Number(work.episode_count) || 0;
+      work.number_of_episodes = totalEps;
+      if (totalEps > 0) {
+        const ratio = epCount / totalEps;
+        work.order = (epCount >= totalEps || ratio >= 0.85) ? 0
+          : ratio >= 0.50 ? 1
+          : ratio >= 0.25 ? 2
+          : 3;
+      }
+    }
+    const imdbId = imdbIdByWorkKey.get(`${mediaType}:${work.id}`);
+    if (imdbId) {
+      work.imdb_id = imdbId;
+      const entry = imdbRatings?.[imdbId];
+      if (entry) {
+        work.imdb_rating = entry[0];
+        work.imdb_votes = entry[1];
+      }
     }
   });
   const commercialEntries = commercialDetails.map((details, index) => {
@@ -136,18 +176,19 @@ export async function qualityContext(personId, credits, tv = []) {
 }
 
 export async function buildActor(id) {
-  const [personData, credits, tv, external] = await Promise.all([
+  const [personData, credits, tv, external, imdbRatings] = await Promise.all([
     person(id),
     movieCredits(id),
     tvCredits(id),
-    externalIds(id)
+    externalIds(id),
+    getBackendImdbRatings()
   ]);
   const valid = validCredits(credits);
   const selectedMovies = reviewMovies(valid);
   const [awards, reviewsByMovie, qualityOptions] = await Promise.all([
     fetchAwards(external.wikidata_id, { name: personData.name, birth: personData.birthday }),
     Promise.all(selectedMovies.map((movie) => reviews(movie.id))),
-    qualityContext(personData.id, credits, tv)
+    qualityContext(personData.id, credits, tv, imdbRatings)
   ]);
   const actor = compute(personData, credits, awards, reviewsByMovie, selectedMovies, qualityOptions);
   return actor;

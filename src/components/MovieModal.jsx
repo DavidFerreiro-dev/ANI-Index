@@ -53,7 +53,8 @@ class RequestQueue {
 
 const calculationQueue = new RequestQueue(2);
 
-export default function MovieModal({ movieId, onClose, onSelectPerson }) {
+export default function MovieModal({ movieId, mediaType = "movie", onClose, onSelectPerson }) {
+  const isTv = mediaType === "tv";
   const numericMovieId = typeof movieId === "string" ? (movieId.match(/(?:^|-)(\d+)$/)?.[1] || movieId) : movieId;
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +69,7 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
     return () => { isMountedRef.current = false; };
   }, []);
 
-  // Fetch movie data and IMDb ratings
+  // Fetch movie or TV series data and IMDb ratings
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -78,27 +79,30 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
       try {
         const idToFetch = Number(numericMovieId);
         if (!idToFetch || Number.isNaN(idToFetch)) {
-          throw new Error("Invalid movie ID");
+          throw new Error(isTv ? "Invalid TV series ID" : "Invalid movie ID");
         }
 
-        // Fetch movie details with automatic fallback between /api/movies/:id and /.netlify/functions/movies/:id
-        let movieRes = await fetch(`/api/movies/${idToFetch}`).catch(() => null);
+        const primaryUrl = isTv ? `/api/tv/${idToFetch}` : `/api/movies/${idToFetch}`;
+        const fnUrl = isTv ? `/.netlify/functions/tv/${idToFetch}` : `/.netlify/functions/movies/${idToFetch}`;
+        const queryUrl = isTv ? `/.netlify/functions/tv?id=${idToFetch}` : `/.netlify/functions/movie?id=${idToFetch}`;
+
+        let movieRes = await fetch(primaryUrl).catch(() => null);
         if (!movieRes || !movieRes.ok) {
-          movieRes = await fetch(`/.netlify/functions/movies/${idToFetch}`).catch(() => null);
+          movieRes = await fetch(fnUrl).catch(() => null);
         }
         if (!movieRes || !movieRes.ok) {
-          movieRes = await fetch(`/.netlify/functions/movie?id=${idToFetch}`).catch(() => null);
+          movieRes = await fetch(queryUrl).catch(() => null);
         }
 
         if (!movieRes || !movieRes.ok) {
-          throw new Error("Could not load movie details");
+          throw new Error(isTv ? "Could not load TV series details" : "Could not load movie details");
         }
 
         const data = await movieRes.json();
         if (!active) return;
         setMovie(data);
 
-        // Load IMDb ratings asynchronously in background so it never blocks the movie from showing
+        // Load IMDb ratings asynchronously in background so it never blocks the title from showing
         loadImdbRatings()
           .then((ratingsDataset) => {
             if (!active || !data.imdb_id || !ratingsDataset) return;
@@ -109,7 +113,7 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
           })
           .catch(() => {});
       } catch (err) {
-        if (active) setError(err.message || "Failed to load movie");
+        if (active) setError(err.message || (isTv ? "Failed to load TV series" : "Failed to load movie"));
       } finally {
         if (active) setLoading(false);
       }
@@ -117,7 +121,7 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
 
     loadData();
     return () => { active = false; };
-  }, [numericMovieId]);
+  }, [numericMovieId, isTv]);
 
   // Queue background ANI Index calculations for directors and cast members
   // NEVER re-calculate for people already in seed-actors.json / seed-directors.json or localStorage.
@@ -286,17 +290,25 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
                 )}
               </div>
 
-              {/* Badges: Year, Runtime, Genres */}
+              {/* Badges: Year/Years, Runtime or Seasons/Episodes, Genres */}
               <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                {movie.year && (
+                {(movie.years || movie.year) && (
                   <span className="flex items-center gap-1 rounded-md bg-card/70 border border-line px-2 py-1">
-                    <Calendar size={13} className="text-sky-400" /> {movie.year}
+                    <Calendar size={13} className="text-sky-400" /> {movie.years || movie.year}
                   </span>
                 )}
-                {movie.runtime > 0 && (
-                  <span className="flex items-center gap-1 rounded-md bg-card/70 border border-line px-2 py-1">
-                    <Clock size={13} className="text-sky-400" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
-                  </span>
+                {isTv ? (
+                  (movie.number_of_seasons > 0 || movie.number_of_episodes > 0) && (
+                    <span className="flex items-center gap-1 rounded-md bg-card/70 border border-line px-2 py-1">
+                      <Film size={13} className="text-sky-400" /> {movie.number_of_seasons} {movie.number_of_seasons === 1 ? "temporada" : "temporadas"} · {movie.number_of_episodes} episodios
+                    </span>
+                  )
+                ) : (
+                  movie.runtime > 0 && (
+                    <span className="flex items-center gap-1 rounded-md bg-card/70 border border-line px-2 py-1">
+                      <Clock size={13} className="text-sky-400" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
+                    </span>
+                  )
                 )}
                 {(movie.genres || []).map((g) => (
                   <span key={g.id} className="rounded-md bg-sky-950/40 border border-sky-800/40 px-2 py-1 text-sky-300 font-medium">
@@ -400,7 +412,7 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
                   <div className="flex items-center justify-between">
                     <img src={TMDB_LOGO} alt="TMDb" className="h-3.5 w-auto" />
                     <a
-                      href={`https://www.themoviedb.org/movie/${movie.id}`}
+                      href={`https://www.themoviedb.org/${isTv ? "tv" : "movie"}/${movie.id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-slate-500 hover:text-sky-400 transition"
@@ -419,11 +431,11 @@ export default function MovieModal({ movieId, onClose, onSelectPerson }) {
             </div>
           </div>
 
-          {/* Direction Section */}
+          {/* Direction / Creators Section */}
           {movie.directors?.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <Film size={16} className="text-sky-400" /> Dirección
+                <Film size={16} className="text-sky-400" /> {isTv ? "Creadores y Dirección" : "Dirección"}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {movie.directors.map((dir) => {

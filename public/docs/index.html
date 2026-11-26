@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANI Index — Documentación Técnica (Actors v26 / Directors v5)</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root {
+      --bg: #0b101b;
+      --bg-elevated: #111827;
+      --bg-code: #0d1320;
+      --border: #1f2937;
+      --border-strong: #334155;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-heading: #f8fafc;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.12);
+      --accent-border: rgba(56, 189, 248, 0.32);
+      --amber: #fbbf24;
+      --amber-soft: rgba(251, 191, 36, 0.12);
+      --emerald: #34d399;
+      --emerald-soft: rgba(52, 211, 153, 0.12);
+      --rose: #fb7185;
+      --sidebar-w: 296px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    html[data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-elevated: #ffffff;
+      --bg-code: #f1f5f9;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #334155;
+      --text-muted: #64748b;
+      --text-heading: #0f172a;
+      --accent: #0284c7;
+      --accent-soft: rgba(2, 132, 199, 0.10);
+      --accent-border: rgba(2, 132, 199, 0.30);
+      --amber: #d97706;
+      --amber-soft: rgba(217, 119, 6, 0.10);
+      --emerald: #059669;
+      --emerald-soft: rgba(5, 150, 105, 0.10);
+      --rose: #e11d48;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Top Header */
+    .topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 40;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-btn {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 9px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--text-heading);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 56px; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px 14px 32px;
+      z-index: 30;
+    }
+
+    .search-wrap {
+      margin-bottom: 14px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 11px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    .pkg-group { margin-bottom: 14px; }
+    .pkg-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      padding: 4px 8px;
+      margin-bottom: 4px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-link:hover { background: var(--accent-soft); color: var(--accent); text-decoration: none; }
+    .nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+
+    .tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      color: var(--text-muted);
+    }
+    .tag-v26 { border-color: var(--accent-border); color: var(--accent); background: var(--accent-soft); }
+    .tag-v5 { border-color: rgba(52, 211, 153, 0.35); color: var(--emerald); background: var(--emerald-soft); }
+
+    /* Main Content */
+    .main {
+      margin-left: var(--sidebar-w);
+      padding: 84px 40px 80px;
+      max-width: 1020px;
+    }
+
+    .jdoc-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+
+    .pkg-breadcrumb {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.025em;
+    }
+
+    .jdoc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .annotation {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      color: var(--text-muted);
+    }
+
+    section {
+      margin-bottom: 52px;
+      scroll-margin-top: 76px;
+    }
+
+    h2 {
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--text-heading);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin: 32px 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin: 22px 0 8px;
+    }
+
+    p { margin: 8px 0 14px; }
+    ul { margin: 8px 0 16px; padding-left: 22px; }
+    li { margin-bottom: 6px; }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    /* Formula / Signature Block */
+    .sig-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-strong);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px 48px 14px 16px;
+      margin: 14px 0 18px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      color: var(--text-heading);
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin: 14px 0 22px;
+      background: var(--bg-elevated);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    th {
+      background: var(--bg-code);
+      color: var(--text-heading);
+      font-weight: 700;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-strong);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    /* Callout */
+    .callout {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 13.5px;
+      border: 1px solid var(--accent-border);
+      background: var(--accent-soft);
+    }
+    .callout-warn {
+      border-color: rgba(251, 191, 36, 0.35);
+      background: var(--amber-soft);
+    }
+
+    /* Flow Diagram */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+    .flow-node {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .flow-node .step {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .flow-node .title {
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 4px;
+    }
+    .flow-node .desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    .tier-pill {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    @media (max-width: 900px) {
+      .menu-btn { display: inline-block; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 78px 18px 60px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" id="menuToggle" aria-label="Menú">☰ Índice</button>
+      <a href="/" class="brand">
+        <img src="/favicon.svg" alt="" width="22" height="22" />
+        <span>ANI Index Docs</span>
+        <span class="brand-badge">Actors v26 · Directors v5</span>
+      </a>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-ghost" id="themeToggle">☀/☾ Tema</button>
+      <a href="/" class="btn-ghost">← Volver a la App</a>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="search-wrap">
+      <input type="search" id="docSearch" class="search-input" placeholder="Buscar paquete, fórmula, regla..." />
+    </div>
+
+    <div class="pkg-group">
+      <div class="pkg-title">net.estudiosriva.ani.core</div>
+      <a href="#core-overview" class="nav-link active"><span>ArchitectureOverview</span><span class="tag">Core</span></a>
+      <a href="#core-imdb" class="nav-link"><span>ImdbDailyPipeline</span><span class="tag">05:00</span></a>
+      <a href="#core-tmdb" class="nav-link"><span>TmdbRealtimeLayer</span><span class="tag">API</span></a>
+      <a href="#core-isolation" class="nav-link"><span>RoleCacheIsolation</span><span class="tag">Cache</span></a>
+      <a href="#core-routes" class="nav-link"><span>MediaRoutesAndEmbeds</span><span class="tag">SPA</span></a>
+    </div>
+
+    <div class="pkg-group">
+      <div class="pkg-title">net.estudiosriva.ani.actors.v26</div>
+      <a href="#actors-spec" class="nav-link"><span>ActorScoringV26</span><span class="tag tag-v26">v26</span></a>
+      <a href="#actors-bayes" class="nav-link"><span>DualBayesian6040</span><span class="tag tag-v26">60/40</span></a>
+      <a href="#actors-quality" class="nav-link"><span>FilmographyQuality</span><span class="tag tag-v26">40%</span></a>
+      <a href="#actors-tv" class="nav-link"><span>TvSeriesRulesV26</span><span class="tag tag-v26">TV</span></a>
+      <a href="#actors-pillars" class="nav-link"><span>AwardsCommercialSentiment</span><span class="tag tag-v26">60%</span></a>
+    </div>
+
+    <div class="pkg-group">
+      <div class="pkg-title">net.estudiosriva.ani.directors.v5</div>
+      <a href="#directors-spec" class="nav-link"><span>DirectorScoringV5</span><span class="tag tag-v5">v5</span></a>
+      <a href="#directors-quality" class="nav-link"><span>PeakAndConsistency</span><span class="tag tag-v5">70/30</span></a>
+      <a href="#directors-tv" class="nav-link"><span>TvAndFranchiseCap</span><span class="tag tag-v5">TV</span></a>
+      <a href="#directors-pillars" class="nav-link"><span>AuthorshipAndLegacy</span><span class="tag tag-v5">25/75</span></a>
+    </div>
+
+    <div class="pkg-group">
+      <div class="pkg-title">net.estudiosriva.ani.tiers</div>
+      <a href="#tiers-scale" class="nav-link"><span>BadgeTierScale</span><span class="tag">0–100</span></a>
+      <a href="#tiers-changelog" class="nav-link"><span>VersionChangelog</span><span class="tag">Log</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="jdoc-header">
+      <div class="pkg-breadcrumb">Package net.estudiosriva.ani · Artistic &amp; Narrative Index</div>
+      <h1>Especificación Técnica del Motor ANI Index</h1>
+      <p>
+        Documentación formal de arquitectura, fuentes híbridas de datos (IMDb + TMDb + Wikidata), reglas de inclusión de cine y series de televisión, y fórmulas matemáticas exactas para <strong>Actores v26</strong> y <strong>Directores v5</strong>.
+      </p>
+      <div class="jdoc-meta">
+        <span class="annotation">@ActorsVersion("26")</span>
+        <span class="annotation">@DirectorsVersion("5")</span>
+        <span class="annotation">@DualSource("60% IMDb / 40% TMDb")</span>
+        <span class="annotation">@MediaScope("movie, tvSeries, tvMiniSeries")</span>
+        <span class="annotation">@MathFrozen("true")</span>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 1. CORE ARCHITECTURE -->
+    <!-- ===================================================================== -->
+    <section id="core-overview">
+      <h2><span class="tag">net.estudiosriva.ani.core</span> Visión General y Arquitectura</h2>
+      <p>
+        El sistema <strong>ANI Index</strong> opera sobre una arquitectura serverless híbrida desplegada en Netlify, diseñada para evaluar trayectorias completas de cine y televisión sin costes de base de datos ni latencia bloqueante en el cliente.
+      </p>
+
+      <div class="flow-grid">
+        <div class="flow-node">
+          <div class="step">01 · BATCH DIARIO (05:00 UTC)</div>
+          <div class="title">GitHub Actions + IMDb TSV</div>
+          <div class="desc">Descarga <code>title.ratings.tsv.gz</code> y <code>title.basics.tsv.gz</code>, filtra <code>movie</code>, <code>tvSeries</code> y <code>tvMiniSeries</code> (≥300 votos) y publica <code>imdb-ratings.json</code> en la rama orphan <code>data</code>.</div>
+        </div>
+        <div class="flow-node">
+          <div class="step">02 · CDN EDGE (24h CACHE)</div>
+          <div class="title">jsDelivr Static Distribution</div>
+          <div class="desc">Frontend (IndexedDB 24h) y Netlify Functions (memoria) consumen el JSON minificado directamente desde <code>cdn.jsdelivr.net</code> sin disparar redeploys.</div>
+        </div>
+        <div class="flow-node">
+          <div class="step">03 · TIEMPO REAL</div>
+          <div class="title">TMDb API v3 + Wikidata SPARQL</div>
+          <div class="desc">Resuelve créditos de cine (<code>movie_credits</code>) y series (<code>tv_credits</code>), <code>external_ids</code>, taquilla, reseñas VADER y premios históricos CC0.</div>
+        </div>
+        <div class="flow-node">
+          <div class="step">04 · CLIENTE &amp; ON-THE-FLY</div>
+          <div class="title">Seeds + LocalStorage + Cola</div>
+          <div class="desc">Consulta primero seeds precalculados y caché por rol; solo encola cálculo serverless para intérpretes o directores no registrados.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="core-imdb">
+      <h3>Pipeline Diario de IMDb (<code>scripts/build-imdb-json.mjs</code>)</h3>
+      <p>
+        Cada madrugada a las <code>05:00 UTC</code> (<code>cron: '0 5 * * *'</code>), el workflow <code>.github/workflows/update-imdb-ratings.yml</code> ejecuta un streaming en dos pasadas de bajo consumo de memoria:
+      </p>
+      <ul>
+        <li><strong>Pasada 1 (<code>title.ratings.tsv.gz</code>):</strong> Almacena en un <code>Map</code> los títulos con <code>numVotes &gt;= 300</code>.</li>
+        <li><strong>Pasada 2 (<code>title.basics.tsv.gz</code>):</strong> Cruza cada <code>tconst</code> candidato y conserva únicamente <code>titleType ∈ {"movie", "tvSeries", "tvMiniSeries"}</code> con <code>isAdult !== "1"</code>.</li>
+        <li><strong>Exclusiones estrictas de género en IMDb:</strong> Descarta cualquier título cuyo campo <code>genres</code> contenga <code>Documentary</code>, <code>News</code>, <code>Talk-Show</code>, <code>Reality-TV</code> o <code>Game-Show</code>, así como episodios individuales (<code>tvEpisode</code>), cortos (<code>short</code>) o videojuegos.</li>
+        <li><strong>Salida:</strong> JSON minificado <code>{"tt0468569":[9.0,2950000]}</code> publicado mediante <em>force-push</em> a la rama <code>data</code> y distribuido vía jsDelivr.</li>
+      </ul>
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>https://cdn.jsdelivr.net/gh/DavidFerreiro-dev/ANI-Index@data/imdb-ratings.json</div>
+    </section>
+
+    <section id="core-tmdb">
+      <h3>Capa en Tiempo Real de TMDb y Respaldo</h3>
+      <p>
+        La capa de TMDb actúa simultáneamente como fuente de metadatos visuales/estructurales y como <strong>respaldo inmediato en tiempo real</strong>: si un estreno reciente de cine o televisión todavía no alcanza los 300 votos o no figura en el corte diario de las 05:00 UTC de IMDb, el motor aplica automáticamente <code>100% Bayes_TMDb</code> sin bloquear el cálculo.
+      </p>
+      <ul>
+        <li>Películas: <code>/person/{id}/movie_credits</code> + <code>/movie/{id}</code> (incluye <code>imdb_id</code>, <code>revenue</code>, <code>budget</code>, <code>belongs_to_collection</code>).</li>
+        <li>Series y Miniseries: <code>/person/{id}/tv_credits</code> + <code>/tv/{id}?append_to_response=external_ids</code> (resuelve <code>external_ids.imdb_id</code> y <code>type</code>).</li>
+      </ul>
+    </section>
+
+    <section id="core-isolation">
+      <h3>Aislamiento de Roles, Caché y Cálculo al Vuelo</h3>
+      <p>
+        Los perfiles de <strong>Actor</strong> y <strong>Director</strong> están estrictamente aislados tanto en los archivos seed como en el almacenamiento local del navegador (<code>localStorage</code>) y en las funciones serverless:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Faceta</th><th>Prefijo / Clave de Caché</th><th>Endpoint Serverless</th><th>Versión Activa</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Actors</strong></td><td><code>actor-merit-ranker:actor:{id}</code></td><td><code>/api/actors/{id}</code></td><td><code>"26"</code></td></tr>
+            <tr><td><strong>Directors</strong></td><td><code>actor-merit-ranker:director:{id}</code></td><td><code>/api/directors/{id}</code></td><td><code>"Director Scoring version 5"</code></td></tr>
+            <tr><td><strong>Global Purger</strong></td><td><code>ani_algo_version</code></td><td><code>purgeStaleAniCache()</code></td><td><code>"actors-v26_directors-v5"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        De este modo, un perfil dual (por ejemplo, Clint Eastwood o Ben Affleck) mantiene notas independientes para su faceta interpretativa y su faceta de dirección. Al abrir la ficha de una película o serie, la cola de concurrencia (<code>max = 2</code>) comprueba primero los JSON seed y después <code>localStorage</code>; únicamente los créditos no cacheados se calculan al vuelo.
+      </p>
+    </section>
+
+    <section id="core-routes">
+      <h3>Sistema de Rutas, Fichas Unificadas y Embeds</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Ruta</th><th>Función / Vista</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>/movie/{slug}-{id}</code></td><td><code>/api/movies/{id}</code></td><td>Ficha de película: póster, sinopsis, duración, nota 60/40 IMDb+TMDb, dirección y reparto con ANI Index.</td></tr>
+            <tr><td><code>/tv/{slug}-{id}</code></td><td><code>/api/tv/{id}</code></td><td>Ficha de serie/miniserie: años de emisión, temporadas y episodios, creadores/directores y reparto con ANI Index.</td></tr>
+            <tr><td><code>/{slug}-{id}/ani</code> · <code>/details</code></td><td><code>ActorEmbed.jsx</code></td><td>Insignia o desglose embebible de actor (admite <code>?compact=true</code> y auto-resize <code>ani-embed-resize</code>).</td></tr>
+            <tr><td><code>/directors/{slug}-{id}/ani</code> · <code>/details</code></td><td><code>ActorEmbed.jsx</code></td><td>Insignia o desglose embebible de director con código <code>&lt;iframe&gt;</code> listo para copiar.</td></tr>
+            <tr><td><code>/docs</code></td><td><code>public/docs/index.html</code></td><td>Portal de documentación técnica estático servido directamente sin intercepción del router SPA.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 2. ACTORS V26 -->
+    <!-- ===================================================================== -->
+    <section id="actors-spec">
+      <h2><span class="tag tag-v26">net.estudiosriva.ani.actors.v26</span> Especificación — Actores v26</h2>
+      <p>
+        El modelo <strong>Actors v26</strong> mantiene congeladas las fórmulas y pesos consolidados de la v25, ampliando el universo de obras evaluables a series de televisión y miniseries bajo filtros estrictos de participación.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pilar</th><th>Peso Base</th><th>Mecanismo Principal</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Filmography Quality</strong></td><td><code>40%</code></td><td>Ventana deslizante (6–8 obras, máx. 2/saga) sobre Bayes dual 60/40 IMDb+TMDb, multiplicadores de director/premio y calibración de carrera corta.</td></tr>
+            <tr><td><strong>Awards Prestige</strong></td><td><code>30%</code></td><td>Oscars, BAFTA, Cannes, Venecia, Berlín, Globos de Oro, SAG y Emmys (0.60× para TV), con freno asimétrico umbralado a 18 pts.</td></tr>
+            <tr><td><strong>Commercial Impact</strong></td><td><code>10%</code></td><td>Top 5 estrenos post-1980 (90% recaudación logarítmica ajustada por década + 10% ROI acotado 0.5×–10×, máx. 1/saga).</td></tr>
+            <tr><td><strong>Critical Sentiment</strong></td><td><code>10%</code></td><td>Análisis VADER sobre frases de reseñas que mencionan al actor o personaje (tope 89 si faltan reseñas).</td></tr>
+            <tr><td><strong>Genre Versatility</strong></td><td><code>10%</code></td><td>Familias de género distintas con <code>order &lt;= 3</code> y <code>vote_average &gt;= 6.5</code> (sobre 6 familias máx.).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="actors-bayes">
+      <h3>Ponderación Dual 60% IMDb / 40% TMDb y Calibración Bayesiana</h3>
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>Bayes(v, r) = (v / (v + 200)) * r + (200 / (v + 200)) * 6.5
+
+Bayes_Final = (r_imdb &gt; 0 &amp;&amp; v_imdb &gt;= 10)
+  ? 0.60 * Bayes(v_imdb, r_imdb) + 0.40 * Bayes(v_tmdb, r_tmdb)
+  : Bayes(v_tmdb, r_tmdb)</div>
+      <p>
+        Parámetros globales: media a priori <code>C = 6.5</code>, umbral de amortiguación <code>m = 200</code>, mínimo de votos TMDb <code>VOTING_THRESHOLD = 50</code>.
+      </p>
+    </section>
+
+    <section id="actors-quality">
+      <h3>Calidad de Filmografía (40%)</h3>
+      <p>
+        Sobre todas las obras válidas (cine + series), se limita a un máximo de <strong>2 obras por franquicia/colección</strong> (<code>belongs_to_collection</code>), seleccionando las de mayor Bayes. El tamaño de la ventana deslizante <code>selectedCount</code> depende de <code>workCount</code>:
+      </p>
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>if (workCount ∈ [3, 10])     → selectedCount = min(5, eligible.length)          // Carrera corta
+else if (workCount &lt;= 6)     → selectedCount = eligible.length
+else if (workCount &gt;= 14)    → selectedCount = 8
+else                         → round(6 + ((workCount - 6) * 2) / 8)
+
+// Pesos de facturación (billing order):
+// Estándar: order 0: 1.00 | order 1: 0.80 | order 2: 0.60 | order 3-5: 0.35 | minor: 0.10
+// Carrera corta (3-10 obras): order 0: 1.35 | order 1: 1.05 | order 2: 0.65 | order 3-5: 0.15 | minor: 0.05
+// Multiplicadores: +1.25× si director curado de prestigio | +1.15× si obra premiada en Wikidata
+
+q = Σ(roleWeight * bayesian) / Σ(roleWeight)
+Normalización: [6.0 → 25, midpoint (6.5 | 6.40) → 55, max (7.8 | 7.45) → 100]</div>
+    </section>
+
+    <section id="actors-tv">
+      <h3>Reglas de Inclusión de Series y Miniseries (<code>Actors v26</code>)</h3>
+      <ul>
+        <li><strong>Tipos admitidos:</strong> <code>tvSeries</code> y <code>tvMiniSeries</code> procedentes de <code>/person/{id}/tv_credits</code>.</li>
+        <li><strong>Umbral de episodios:</strong> <code>episode_count &gt;= 3</code>. Elimina cameos de 1–2 episodios como estrella invitada manteniendo protagonistas, recurrentes y miniseries.</li>
+        <li><strong>Billing order basado en episodios (TV):</strong> En series y miniseries, el peso de protagonismo se calcula comparando los episodios en los que aparece el actor frente al total de episodios de la obra (<code>number_of_episodes</code>): si participa en todos los episodios (o <code>&gt;= 85%</code>) cuenta como protagonista completo (<code>order = 0</code>); <code>&gt;= 50% → order 1</code>; <code>&gt;= 25% → order 2</code>; <code>&lt; 25% (mín. 3 ep) → order 3</code>.</li>
+        <li><strong>Exclusiones estrictas (v26.2):</strong> Géneros TMDb <code>99</code> (Documentary), <code>10763</code> (News), <code>10764</code> (Reality), <code>10767</code> (Talk Show), <code>10770</code> (TV Movie); créditos no ficticios donde <code>character</code> empiece por <code>Self</code>, <code>Himself</code>, <code>Herself</code>, <code>Themselves</code>, <code>Narrator</code>, <code>Host</code>, <code>Guest</code>, <code>Contestant</code> o contenga <code>archive footage</code> / <code>(voice)</code>; eventos de lucha libre y MMA (<code>WWE</code>, <code>WWF</code>, <code>WrestleMania</code>, <code>Royal Rumble</code>, <code>UFC</code>, etc.); recopilatorios y títulos con <code>vote_count &lt; 50</code>.</li>
+        <li><strong>Efecto bidireccional:</strong> Las series válidas entran siempre en el cómputo, tanto si elevan como si reducen la media del actor.</li>
+      </ul>
+    </section>
+
+    <section id="actors-pillars">
+      <h3>Premios (30%), Taquilla (10%), Sentimiento (10%) y Versatilidad (10%)</h3>
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>// Awards Prestige (30%)
+Oscar Lead: 38 won / 10 nom | Oscar Supporting: 18 won / 6 nom
+Tier S (BAFTA, Cannes, Venecia, Berlín, Goya): Lead 24/8 | Supp 11/4.5
+Tier A (Globos de Oro, SAG, Critics Choice, Emmy*0.6): Lead 10/4 | Supp 5/2
+Tier B (Saturn, Sitges, Satellite, Gotham): decaimiento 0.60^k, tope 15 pts | Otros: +0.5 (tope 10 pts)
+AwardsScore = min(100, log(1 + points) * 100 / log(101))   // Piso mínimo 75 si ganó Oscar
+
+// Freno asimétrico umbralado:
+if (awards &gt;= baseScore) → 0.70 * baseScore + 0.30 * awards
+else {
+  excess = max(0, baseScore - awards - 18)
+  brake = 0.15 * min(1, excess / 24)
+  score = (1 - brake) * baseScore + brake * awards
+}</div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 3. DIRECTORS V5 -->
+    <!-- ===================================================================== -->
+    <section id="directors-spec">
+      <h2><span class="tag tag-v5">net.estudiosriva.ani.directors.v5</span> Especificación — Directores v5</h2>
+      <p>
+        El modelo <strong>Directors v5</strong> conserva la arquitectura matemática de la v4 e integra las series y miniseries dirigidas bajo control estricto de episodios y límite de franquicia/serie.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pilar</th><th>Peso</th><th>Composición</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Filmography Quality &amp; Consistency</strong></td><td><code>40%</code></td><td>70% Peak (Top 4 obras, máx. 1 por franquicia/serie) + 30% Consistencia (ventana 6–12, máx. 2 por franquicia).</td></tr>
+            <tr><td><strong>Awards &amp; Festivals Prestige</strong></td><td><code>25%</code></td><td>Tier S (25/9), Tier A (12/5), Tier B (7/3) sobre dirección, mejor película/serie y guion.</td></tr>
+            <tr><td><strong>Commercial Impact</strong></td><td><code>15%</code></td><td>Top 3 largometrajes post-1980 (70% log gross + 30% ROI, 1.10× bonus original standalone).</td></tr>
+            <tr><td><strong>Authorship &amp; Versatility</strong></td><td><code>10%</code></td><td>75% Versatilidad de géneros (≥6.5) + 25% Índice de autoría (créditos Writer/Screenplay/Story).</td></tr>
+            <tr><td><strong>Cultural Legacy</strong></td><td><code>10%</code></td><td>Escala logarítmica sobre los Top 5 títulos más votados (multiplicador clásico pre-1990 hasta 1.12×).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="directors-quality">
+      <h3>Peak (70%) + Consistencia (30%) y Compresión Élite</h3>
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>PeakScore = mean(Top 4 Bayes_Final, max 1 obra por franquicia o serie)
+ConsistencyCount = clamp(round(6 + ((eligible.length - 6) / 24) * 6), 6, 12)
+ConsistencyScore = mean(Top ConsistencyCount Bayes_Final, max 2 por franquicia)
+
+Quality = 0.70 * clamp(((PeakScore - 6.0) / 2.35) * 100)
+        + 0.30 * clamp(((ConsistencyScore - 6.0) / 2.35) * 100)
+
+// Mezcla asimétrica y compresión superior (&gt; 88):
+score = (awards &gt;= baseScore) ? 0.75 * baseScore + 0.25 * awards : 0.95 * baseScore + 0.05 * awards
+if (score &gt; 88) {
+  r = (score - 88) / 12
+  score = 88 + 7.5 * (ln(1 + 1.5 * r) / ln(2.5))
+}</div>
+    </section>
+
+    <section id="directors-tv">
+      <h3>Umbrales de TV y Límite de Franquicia / Serie (<code>Directors v5</code>)</h3>
+      <ul>
+        <li><strong>Series regulares:</strong> Requiere <code>job === "Director"</code> y <code>episode_count &gt;= 2</code>.</li>
+        <li><strong>Miniseries (<code>type === "Miniseries"</code>):</strong> Requiere <code>episode_count &gt;= 1</code>.</li>
+        <li><strong>Agrupación por serie / franquicia:</strong> Todas las temporadas o episodios dirigidos de una misma serie se agrupan bajo el identificador único <code>tv:{series_id}</code>, garantizando que una sola serie cuente como <strong>una única obra</strong> y no monopolice el Top 4 Peak ni la ventana de consistencia.</li>
+        <li><strong>Exclusiones no ficticias:</strong> Se descartan los géneros <code>99</code> (Documentary), <code>10763</code> (News), <code>10764</code> (Reality), <code>10767</code> (Talk Show) y <code>10770</code> (TV Movie).</li>
+      </ul>
+    </section>
+
+    <section id="directors-pillars">
+      <h3>Versatilidad de Géneros (75%) e Índice de Autoría (25%)</h3>
+      <div class="sig-block"><button class="copy-btn" data-copy>Copiar</button>GenreVersatility = clamp((distinctGenreGroups(rating &gt;= 6.5) / 6) * 100)
+AuthorshipIndex  = (obrasConCréditoGuion / totalObrasVálidas) * 100
+PillarScore      = clamp(0.75 * GenreVersatility + 0.25 * AuthorshipIndex)</div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 4. TIERS & CHANGELOG -->
+    <!-- ===================================================================== -->
+    <section id="tiers-scale">
+      <h2><span class="tag">net.estudiosriva.ani.tiers</span> Escala de Puntuación, Insignias y Changelog</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rango ANI</th><th>Insignia / Nivel</th><th>Color</th><th>Criterio de Clasificación</th></tr></thead>
+          <tbody>
+            <tr><td><code>90 – 100</code></td><td><strong>Diamond (Élite Histórica)</strong></td><td>Cian / Diamante</td><td>Excelencia sostenida en todos los pilares activos, prestigio S/A y legado canónico.</td></tr>
+            <tr><td><code>80 – 89</code></td><td><strong>Gold</strong></td><td>Dorado</td><td>Trayectorias de primer nivel mundial con alto reconocimiento crítico y premios mayores.</td></tr>
+            <tr><td><code>60 – 79</code></td><td><strong>Silver</strong></td><td>Plateado</td><td>Carreras sólidas, consistentes y referentes comerciales o de género.</td></tr>
+            <tr><td><code>40 – 59</code></td><td><strong>Bronze</strong></td><td>Bronce</td><td>Filmografías mixtas, irregulares o en fase temprana de consolidación.</td></tr>
+            <tr><td><code>0 – 39</code></td><td><strong>Red</strong></td><td>Rojo</td><td>Recepción crítica deficiente o volumen insuficiente de obras destacadas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tiers-changelog">
+      <h3>Registro de Versiones (Changelog)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Versión</th><th>Ámbito</th><th>Hitos Principales</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Actors v26 · Directors v5</strong></td><td>Actual</td><td>Integración completa de <code>tvSeries</code> y <code>tvMiniSeries</code> (<code>ep &gt;= 3</code> actores, <code>ep &gt;= 2</code> / <code>&gt;= 1</code> miniseries directores), exclusiones no ficticias en IMDb y TMDb, ficha <code>/tv/:id</code>, invalidación de caché y portal <code>/docs</code>.</td></tr>
+            <tr><td><strong>Actors v25 · Directors v4</strong></td><td>Anterior</td><td>Ponderación dual 60% IMDb / 40% TMDb, pipeline diario GitHub Actions + jsDelivr, ficha interactiva <code>/movie/:id</code>.</td></tr>
+            <tr><td><strong>Actors v24 · Directors v4</strong></td><td>Base matemática</td><td>Congelación de ventana deslizante (6–8), freno asimétrico umbralado a 18 pts, compresión élite &gt; 88 en directores y embeds <code>&lt;iframe&gt;</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const themeBtn = document.getElementById("themeToggle");
+      const savedTheme = localStorage.getItem("ani_docs_theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        root.setAttribute("data-theme", savedTheme);
+      }
+      themeBtn.addEventListener("click", function () {
+        const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        localStorage.setItem("ani_docs_theme", next);
+      });
+
+      const sidebar = document.getElementById("sidebar");
+      const menuBtn = document.getElementById("menuToggle");
+      menuBtn.addEventListener("click", function () {
+        sidebar.classList.toggle("open");
+      });
+
+      const navLinks = Array.from(document.querySelectorAll(".nav-link"));
+      navLinks.forEach(function (link) {
+        link.addEventListener("click", function () {
+          navLinks.forEach(function (l) { l.classList.remove("active"); });
+          link.classList.add("active");
+          sidebar.classList.remove("open");
+        });
+      });
+
+      // Instant sidebar & section search
+      const searchInput = document.getElementById("docSearch");
+      searchInput.addEventListener("input", function () {
+        const q = searchInput.value.trim().toLowerCase();
+        document.querySelectorAll(".pkg-group").forEach(function (group) {
+          let anyVisible = false;
+          group.querySelectorAll(".nav-link").forEach(function (link) {
+            const text = link.textContent.toLowerCase();
+            const targetId = link.getAttribute("href").slice(1);
+            const targetEl = document.getElementById(targetId);
+            const sectionText = targetEl ? targetEl.textContent.toLowerCase() : "";
+            const match = !q || text.includes(q) || sectionText.includes(q);
+            link.style.display = match ? "flex" : "none";
+            if (match) anyVisible = true;
+          });
+          group.style.display = anyVisible ? "block" : "none";
+        });
+      });
+
+      // Copy buttons for signature blocks
+      document.querySelectorAll("[data-copy]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const block = btn.parentElement;
+          const text = block.textContent.replace(/^Copiar\s*/, "").trim();
+          navigator.clipboard.writeText(text).then(function () {
+            const prev = btn.textContent;
+            btn.textContent = "Copiado ✓";
+            setTimeout(function () { btn.textContent = prev; }, 1500);
+          }).catch(function () {});
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 const BASE = "https://api.themoviedb.org/3";
 const movieDirectorCache = new Map();
 const movieDetailsCache = new Map();
+const tvDetailsCache = new Map();
 
 export async function tmdbGet(path, params = {}, timeoutMs = 8000) {
   const key = process.env.TMDB_API_KEY;
@@ -51,10 +52,30 @@ export async function person(id) { return tmdbGet(`/person/${id}`); }
 export async function movieCredits(id) { return (await tmdbGet(`/person/${id}/movie_credits`)).cast || []; }
 export async function tvCredits(id) { return (await tmdbGet(`/person/${id}/tv_credits`)).cast || []; }
 export async function personCrewCredits(id) { return (await tmdbGet(`/person/${id}/movie_credits`)).crew || []; }
+export async function personTvCrewCredits(id) { return (await tmdbGet(`/person/${id}/tv_credits`)).crew || []; }
 export async function externalIds(id) { return tmdbGet(`/person/${id}/external_ids`); }
 export async function movie(id) { return tmdbGet(`/movie/${id}`); }
 export async function movieCast(id) { return (await tmdbGet(`/movie/${id}/credits`)).cast || []; }
 export async function movieCrew(id) { return (await tmdbGet(`/movie/${id}/credits`)).crew || []; }
+export async function tvDetails(id) {
+  if (tvDetailsCache.has(id)) return tvDetailsCache.get(id);
+  try {
+    const details = await tmdbGet(`/tv/${id}`, { append_to_response: "external_ids" });
+    tvDetailsCache.set(id, details);
+    return details;
+  } catch {
+    tvDetailsCache.set(id, null);
+    return null;
+  }
+}
+export async function tvCreditsByShow(id) {
+  try { return await tmdbGet(`/tv/${id}/credits`); }
+  catch { return { cast: [], crew: [] }; }
+}
+export async function tvExternalIds(id) {
+  try { return await tmdbGet(`/tv/${id}/external_ids`); }
+  catch { return {}; }
+}
 export async function movieDirectors(id) {
   if (movieDirectorCache.has(id)) return movieDirectorCache.get(id);
   try {

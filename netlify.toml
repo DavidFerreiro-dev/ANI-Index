@@ -25,8 +25,23 @@
   status = 200
 
 [[redirects]]
+  from = "/api/tv/*"
+  to = "/.netlify/functions/tv/:splat"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/docs"
+  to = "/docs/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/docs/*"
+  to = "/docs/index.html"
   status = 200
 
 # Keep the single-page app fallback after the API rules. Declaring it explicitly

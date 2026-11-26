@@ -1,5 +1,8 @@
 /api/movies/*/cast /.netlify/functions/movie-cast/:splat/cast 200
 /api/actors/* /.netlify/functions/actors/:splat 200
 /api/directors/* /.netlify/functions/directors/:splat 200
+/api/tv/* /.netlify/functions/tv/:splat 200
 /api/* /.netlify/functions/:splat 200
+/docs /docs/index.html 200
+/docs/ /docs/index.html 200
 /* /index.html 200

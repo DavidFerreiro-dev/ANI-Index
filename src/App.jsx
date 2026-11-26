@@ -35,10 +35,10 @@ export default function App() {
   return <MainApp />;
 }
 
-function getMovieRoute(pathname) {
-  const match = pathname.match(/^\/movie\/(?:[^\/]+-)?(\d+)\/?$/);
+function getMediaRoute(pathname) {
+  const match = pathname.match(/^\/(movie|tv)\/(?:[^\/]+-)?(\d+)\/?$/);
   if (!match) return null;
-  return Number(match[1]);
+  return { mediaType: match[1], id: Number(match[2]) };
 }
 
 function MainApp() {
@@ -47,7 +47,7 @@ function MainApp() {
   const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(null);
-  const [selectedMovieId, setSelectedMovieId] = useState(() => getMovieRoute(window.location.pathname));
+  const [selectedMedia, setSelectedMedia] = useState(() => getMediaRoute(window.location.pathname));
   const [criteria, setCriteria] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [mode, setMode] = useState("Actors");
@@ -56,22 +56,22 @@ function MainApp() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const movieId = getMovieRoute(window.location.pathname);
-      setSelectedMovieId(movieId);
+      setSelectedMedia(getMediaRoute(window.location.pathname));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const openMovie = useCallback((id, title = "") => {
+  const openMovie = useCallback((id, title = "", mediaType = "movie") => {
+    const type = mediaType === "tv" ? "tv" : "movie";
     const slug = title ? `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${id}` : id;
-    window.history.pushState({}, "", `/movie/${slug}`);
-    setSelectedMovieId(id);
+    window.history.pushState({}, "", `/${type}/${slug}`);
+    setSelectedMedia({ id, mediaType: type });
   }, []);
 
   const closeMovie = useCallback(() => {
     window.history.pushState({}, "", "/");
-    setSelectedMovieId(null);
+    setSelectedMedia(null);
   }, []);
 
   useEffect(() => {
@@ -275,7 +275,7 @@ function MainApp() {
               mode={mode}
               isDetailed={isDetailedScore}
               onOpen={(item) => (mode === "Directors" ? openDirector(item.id, item) : openActor(item.id, item))}
-              onOpenMovie={(movieId, title) => openMovie(movieId, title)}
+              onOpenMovie={(movieId, title, mediaType) => openMovie(movieId, title, mediaType)}
             />
           ))}
         </div>
@@ -283,7 +283,11 @@ function MainApp() {
 
       <footer className="border-t border-line px-4 py-6">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 text-center">
-          <button onClick={() => setCriteria(true)} className="text-sm text-slate-400 underline-offset-4 hover:text-white hover:underline">Criteria</button>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
+            <button onClick={() => setCriteria(true)} className="underline-offset-4 hover:text-white hover:underline">Criteria</button>
+            <span className="text-slate-600" aria-hidden="true">·</span>
+            <a href="/docs" target="_blank" rel="noreferrer" className="underline-offset-4 hover:text-sky-300 hover:underline font-medium">Documentación</a>
+          </div>
           <div className="flex flex-wrap items-center justify-center gap-5">
             <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" aria-label="The Movie Database">
               <img src="/tmdb-short-blue.svg" alt="TMDb" className="h-10 sm:h-11 w-auto" />
@@ -299,11 +303,12 @@ function MainApp() {
       </footer>
 
       {selected && (mode === "Directors"
-        ? <DirectorModal director={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} onOpenMovie={(movieId, title) => openMovie(movieId, title)} />
-        : <ActorModal actor={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} onOpenMovie={(movieId, title) => openMovie(movieId, title)} />)}
-      {selectedMovieId && (
+        ? <DirectorModal director={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} onOpenMovie={(movieId, title, mediaType) => openMovie(movieId, title, mediaType)} />
+        : <ActorModal actor={selected} isDetailed={isDetailedScore} onClose={() => setSelected(null)} onOpenMovie={(movieId, title, mediaType) => openMovie(movieId, title, mediaType)} />)}
+      {selectedMedia && (
         <MovieModal
-          movieId={selectedMovieId}
+          movieId={selectedMedia.id}
+          mediaType={selectedMedia.mediaType}
           onClose={closeMovie}
           onSelectPerson={({ id, type }) => {
             closeMovie();
